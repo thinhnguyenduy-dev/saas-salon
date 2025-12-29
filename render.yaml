@@ -1,0 +1,61 @@
+services:
+  # Backend API
+  - type: web
+    name: salonpro-api
+    env: node
+    plan: free
+    buildCommand: pnpm --filter api build
+    startCommand: node apps/api/dist/main
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        fromService:
+          type: mongo
+          name: salonpro-db
+          property: connectionString
+      - key: REDIS_HOST
+        fromService:
+          type: redis
+          name: salonpro-redis
+          property: host
+      - key: REDIS_PORT
+        fromService:
+          type: redis
+          name: salonpro-redis
+          property: port
+      - key: JWT_SECRET
+        generateValue: true
+      - key: REFRESH_SECRET
+        generateValue: true
+
+  # Frontend Web
+  - type: web
+    name: salonpro-web
+    env: node
+    plan: free
+    buildCommand: pnpm --filter web build
+    startCommand: pnpm --filter web start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXTAUTH_URL
+        value: https://salonpro-web.onrender.com # Update after first deploy
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: salonpro-api
+          property: url
+
+databases:
+  - name: salonpro-db
+    plan: free # Note: Render free tier DBs expire after 90 days
+    ipAllowList: [] # Allow all internal
+
+  - name: salonpro-redis
+    plan: free # Note: Render free tier Redis is ephemeral
+    ipAllowList: []
