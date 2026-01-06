@@ -25,13 +25,23 @@ import { BookingsModule } from './bookings/bookings.module';
     // Database (MongoDB)
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        uri: `mongodb://${configService.get('DB_USERNAME')}:${configService.get(
-          'DB_PASSWORD',
-        )}@${configService.get('DB_HOST')}:${configService.get(
-          'DB_PORT',
-        )}/${configService.get('DB_DATABASE')}?authSource=admin`,
-      }),
+      useFactory: async (configService: ConfigService) => {
+        const host = configService.get('DB_HOST', 'localhost');
+        const port = configService.get('DB_PORT', '27017');
+        const database = configService.get('DB_DATABASE', 'salonpro');
+        const username = configService.get('DB_USERNAME');
+        const password = configService.get('DB_PASSWORD');
+        
+        // Build connection string with or without auth
+        let uri: string;
+        if (username && password) {
+          uri = `mongodb://${username}:${password}@${host}:${port}/${database}?authSource=admin`;
+        } else {
+          uri = `mongodb://${host}:${port}/${database}`;
+        }
+        
+        return { uri };
+      },
       inject: [ConfigService],
     }),
 

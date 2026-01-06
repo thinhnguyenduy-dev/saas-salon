@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Calendar,
   Users,
+  UserCog,
   Scissors,
   Settings,
   CreditCard,
@@ -38,6 +39,12 @@ const routes = [
     icon: Scissors,
     href: '/dashboard/services',
     color: 'text-orange-700',
+  },
+  {
+    label: 'Staff',
+    icon: UserCog,
+    href: '/dashboard/staff',
+    color: 'text-teal-500',
   },
   {
     label: 'Billing',
