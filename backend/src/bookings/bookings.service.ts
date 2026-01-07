@@ -10,6 +10,7 @@ import { CreatePublicBookingDto } from './dto/create-public-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { User, UserRole } from '../entities/user.entity';
 import { UsersService } from '../users/users.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class BookingsService {
@@ -19,6 +20,7 @@ export class BookingsService {
     @InjectRepository(Service) private serviceRepository: Repository<Service>,
     @InjectRepository(Customer) private customerRepository: Repository<Customer>,
     private usersService: UsersService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async createPublic(createDto: CreatePublicBookingDto) {
@@ -84,7 +86,20 @@ export class BookingsService {
       status: BookingStatus.CONFIRMED,
     });
 
-    return this.bookingRepository.save(booking);
+    const savedBooking = await this.bookingRepository.save(booking);
+    
+    // Notifications
+    if (customer.email) {
+        this.notificationsService.sendBookingConfirmation(customer.email, {
+            bookingId: savedBooking.id,
+            bookingCode: savedBooking.bookingCode,
+            date: savedBooking.appointmentDate,
+            time: savedBooking.startTime,
+            shopName: 'Our Shop' // Should fetch shop
+        });
+    }
+
+    return savedBooking;
   }
 
   async create(createBookingDto: CreateBookingDto, user: User) {
@@ -218,13 +233,27 @@ export class BookingsService {
     return this.bookingRepository.save(booking);
   }
 
-    async remove(id: string, user: User) {
+  async remove(id: string, user: User) {
+    const booking = await this.bookingRepository.findOne({ where: { id, shopId: user.shopId }, relations: ['customer'] });
+    if (!booking) throw new NotFoundException('Booking not found');
+
     await this.bookingRepository.update(
       { id, shopId: user.shopId },
       { status: BookingStatus.CANCELLED },
     );
+
+    if (booking.customer && booking.customer.email) {
+        this.notificationsService.sendBookingCancellation(booking.customer.email, {
+             bookingId: booking.id,
+             date: booking.appointmentDate,
+             shopName: 'My Shop'
+        });
+    }
+
     return { message: 'Booking cancelled' };
   }
+
+
 
   async getAvailableSlots(query: any) {
     const { shopId, serviceIds, staffId, date } = query;

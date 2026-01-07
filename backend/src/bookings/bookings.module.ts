@@ -7,11 +7,13 @@ import { Staff } from '../entities/staff.entity';
 import { Service } from '../entities/service.entity';
 import { Customer } from '../entities/customer.entity';
 import { UsersModule } from '../users/users.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Booking, Staff, Service, Customer]),
     UsersModule,
+    NotificationsModule,
   ],
   controllers: [BookingsController],
   providers: [BookingsService],

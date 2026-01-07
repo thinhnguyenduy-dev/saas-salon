@@ -1,4 +1,5 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import { json, urlencoded } from 'express';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
@@ -16,6 +17,10 @@ import { CustomersModule } from './customers/customers.module';
 import { StaffModule } from './staff/staff.module';
 import { BookingsModule } from './bookings/bookings.module';
 import { ShopsModule } from './shops/shops.module';
+import { PaymentsModule } from './payments/payments.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { ReviewsModule } from './reviews/reviews.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
@@ -80,11 +85,38 @@ import { ShopsModule } from './shops/shops.module';
     BookingsModule,
 
     ShopsModule,
+    PaymentsModule,
+    NotificationsModule,
+    ReviewsModule,
+    AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // 1. Raw body for Stripe Webhook
+    consumer
+      .apply(json({
+        verify: (req: any, res, buf) => {
+          if (buf && buf.length) {
+            req.rawBody = buf;
+          }
+        }
+      }))
+      .forRoutes({ path: 'payments/webhook', method: RequestMethod.POST });
+
+    // 2. Standard JSON for everything else
+    consumer
+      .apply(json())
+      .exclude({ path: 'payments/webhook', method: RequestMethod.POST })
+      .forRoutes('*');
+
+    // 3. URL Encoded for everything
+    consumer
+      .apply(urlencoded({ extended: true }))
+      .forRoutes('*');
+  }
   constructor(@InjectDataSource() private dataSource: DataSource) {}
 
   async onModuleInit() {

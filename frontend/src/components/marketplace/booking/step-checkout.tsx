@@ -9,6 +9,11 @@ import { MapPin, Calendar, User } from "lucide-react"
 import { useState } from "react"
 import apiClient from "@/lib/api-client"
 import { useRouter } from "next/navigation"
+import { loadStripe } from "@stripe/stripe-js"
+import { Elements } from "@stripe/react-stripe-js"
+import { CheckoutForm } from "@/components/payment/CheckoutForm"
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || "");
 
 interface StepCheckoutProps {
     shop: any;
@@ -24,6 +29,9 @@ export function StepCheckout({ shop }: StepCheckoutProps) {
   const [guestEmail, setGuestEmail] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  
+  const [clientSecret, setClientSecret] = useState("");
+  const [paymentMode, setPaymentMode] = useState(false);
 
   const handleBooking = async () => {
     if (!guestName || !guestPhone) {
@@ -43,17 +51,32 @@ export function StepCheckout({ shop }: StepCheckoutProps) {
              shopId: shop.id,
              services: services.map(s => s.id),
              staffId: staff?.id,
-             appointmentDate: format(timeSlot.date, "yyyy-MM-dd"), // ensure date obj
+             appointmentDate: format(timeSlot.date, "yyyy-MM-dd"), 
              startTime: timeSlot.time,
              guestName,
              guestPhone,
              guestEmail
          };
 
-         await apiClient.post('/bookings/public', payload);
-         alert("Booking Successful!");
-         reset();
-         router.push('/'); 
+         // 1. Create Booking
+         const bookingRes = await apiClient.post('/bookings/public', payload);
+         const booking = bookingRes.data;
+
+         // 2. Create Payment Intent
+         const paymentRes = await apiClient.post('/payments/create-intent', {
+            amount: total,
+            currency: 'usd',
+            metadata: { bookingId: booking.id, bookingCode: booking.bookingCode }
+         });
+
+         if (paymentRes.data?.client_secret) {
+             setClientSecret(paymentRes.data.client_secret);
+             setPaymentMode(true);
+         } else {
+             // Fallback if no payment needed or error (shouldn't happen directly)
+             handleSuccess(); 
+         }
+
     } catch (err: any) {
         console.error(err);
         const msg = err.response?.data?.message;
@@ -61,6 +84,30 @@ export function StepCheckout({ shop }: StepCheckoutProps) {
     } finally {
         setLoading(false);
     }
+  }
+
+  const handleSuccess = () => {
+      alert("Booking & Payment Successful!");
+      reset();
+      router.push('/');
+  }
+
+  if (paymentMode && clientSecret) {
+      return (
+          <div className="max-w-md mx-auto space-y-6">
+              <div className="text-center">
+                  <h2 className="text-2xl font-bold">Payment</h2>
+                  <p className="text-muted-foreground">Secure your booking</p>
+              </div>
+              <Card>
+                  <CardContent className="pt-6">
+                      <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
+                          <CheckoutForm onSuccess={handleSuccess} />
+                      </Elements>
+                  </CardContent>
+              </Card>
+          </div>
+      )
   }
 
   return (

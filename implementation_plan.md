@@ -48,8 +48,40 @@
     *   Business Hours configuration.
     *   Profile update.
 
-## Phase 5: Advanced Features (Future)
-- [ ] Payments (Stripe/Momo integration).
-- [ ] Notifications (Email/Push).
-- [ ] Reviews & Ratings.
-- [ ] Analytics / Reports.
+## Phase 5: Advanced Features (Active)
+**Goal:** Add monetization, engagement, and insights.
+
+### 5.1 Payments (Stripe Integration)
+*   **Backend:**
+    *   Install `stripe` package.
+    *   Update `Booking` entity: `paymentStatus` (PENDING, PAID, FAILED), `paymentIntentId`.
+    *   Create `PaymentsModule` and `PaymentsService`.
+    *   Endpoint: `POST /payments/create-intent` (creates PaymentIntent for a booking).
+    *   Webhook: `POST /payments/webhook` (listens for `payment_intent.succeeded`).
+*   **Frontend:**
+    *   Install `@stripe/stripe-js` and `@stripe/react-stripe-js`.
+    *   Update Booking Wizard: Add "Payment" step before/after confirmation.
+    *   Implement Payment Element form.
+
+### 5.2 Notifications
+*   **Backend:**
+    *   Use `bullmq` for separate notification queue.
+    *   Email Service (e.g., SendGrid or Nodemailer for dev).
+    *   Triggers: Booking Created, Booking Cancelled, Reminder (Cron).
+*   **Frontend:**
+    *   (Optional) In-app notification center.
+
+### 5.3 Reviews & Ratings
+*   **Backend:**
+    *   `Review` Entity (rating, comment, photos, relationships to Shop, Service, Customer).
+    *   Endpoints: Create, Get by Shop/Service.
+*   **Frontend:**
+    *   Review Form on Booking History or after completion.
+    *   Display stars/reviews on Shop Detail page.
+
+### 5.4 Analytics (Partner Dashboard)
+*   **Backend:**
+    *   Endpoints for: Revenue, Booking Counts, Top Services.
+*   **Frontend:**
+    *   Charts (Recharts or Chart.js) for "Revenue over time".
+
