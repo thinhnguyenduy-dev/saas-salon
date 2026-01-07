@@ -37,6 +37,11 @@ export class BookingsController {
     return this.bookingsService.create(createBookingDto, user);
   }
 
+  @Get('my-bookings')
+  getMyBookings(@CurrentUser() user: User) {
+    return this.bookingsService.getMyBookings(user);
+  }
+
   @Get()
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })

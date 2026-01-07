@@ -48,6 +48,7 @@ export class BookingsService {
             fullName: guestName,
             phone: guestPhone,
             email: guestEmail,
+            userId: user.id // Link Account
         });
         customer = await this.customerRepository.save(customer);
     }
@@ -139,6 +140,20 @@ export class BookingsService {
 
       const count = await qb.getCount();
       return count === 0;
+  }
+
+  async getMyBookings(user: User) {
+      // Find all customers linked to this user
+      const customers = await this.customerRepository.find({ where: { userId: user.id } });
+      const customerIds = customers.map(c => c.id);
+
+      if (customerIds.length === 0) return [];
+
+      return this.bookingRepository.find({
+          where: { customerId: In(customerIds) },
+          relations: ['shop', 'services', 'staff'],
+          order: { appointmentDate: 'DESC', startTime: 'DESC' }
+      });
   }
 
   async findAll(query: any, user: User) {

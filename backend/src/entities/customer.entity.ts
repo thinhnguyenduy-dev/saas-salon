@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Shop } from './shop.entity';
+import { User } from './user.entity';
 
 export enum MembershipTier {
   BRONZE = 'BRONZE',
@@ -20,6 +21,14 @@ export class Customer {
   @ManyToOne(() => Shop, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'shopId' })
   shop: Shop;
+
+  @Column({ nullable: true })
+  userId: string; // Link to global Identity
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'userId' })
+  user: any; // Avoid circular dependency import issues if possible, or import User
+
 
   @Column()
   fullName: string;

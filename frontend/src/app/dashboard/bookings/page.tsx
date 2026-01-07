@@ -2,8 +2,7 @@
 
 import { useBookings } from '@/hooks/use-bookings';
 import { BookingCalendar } from '@/components/bookings/booking-calendar';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { BookingModal } from '@/components/dashboard/booking-modal';
 import { useState } from 'react';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay } from 'date-fns';
 
@@ -42,9 +41,7 @@ export default function BookingsPage() {
             Manage appointments and staff schedules.
           </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" /> New Booking
-        </Button>
+        <BookingModal />
       </div>
 
       <div className="flex-1 min-h-[600px]">
