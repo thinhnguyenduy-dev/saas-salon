@@ -4,9 +4,32 @@ import { useBookings } from '@/hooks/use-bookings';
 import { BookingCalendar } from '@/components/bookings/booking-calendar';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
+import { useState } from 'react';
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, startOfDay, endOfDay } from 'date-fns';
 
 export default function BookingsPage() {
-  const { data, isLoading } = useBookings(); // Fetch all for now, optimize with date range later
+  const [view, setView] = useState('week'); // Default to week view
+  const [date, setDate] = useState(new Date());
+
+  // Calculate range for query
+  let startDate: Date, endDate: Date;
+  
+  if (view === 'month') {
+      startDate = startOfMonth(date);
+      endDate = endOfMonth(date);
+  } else if (view === 'week') {
+      startDate = startOfWeek(date);
+      endDate = endOfWeek(date);
+  } else {
+      // day or agenda
+      startDate = startOfDay(date);
+      endDate = endOfDay(date);
+  }
+
+  // Adjust for calendar overflow (previous/next month days visible in month view) - optional but nice
+  // For simplicity, strict month/week matches for now.
+  
+  const { data, isLoading } = useBookings({ startDate, endDate });
   
   const bookings = data?.docs || [];
 
@@ -24,11 +47,17 @@ export default function BookingsPage() {
         </Button>
       </div>
 
-      <div className="flex-1">
+      <div className="flex-1 min-h-[600px]">
         {isLoading ? (
-            <div>Loading calendar...</div>
+            <div className="flex items-center justify-center h-full">Loading calendar...</div>
         ) : (
-            <BookingCalendar bookings={bookings} />
+            <BookingCalendar 
+                bookings={bookings} 
+                view={view}
+                date={date}
+                onView={setView}
+                onNavigate={setDate}
+            />
         )}
       </div>
     </div>

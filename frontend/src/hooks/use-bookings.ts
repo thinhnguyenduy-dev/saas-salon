@@ -2,11 +2,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 
 export interface Booking {
-  _id: string;
+  id: string;
   bookingCode: string;
-  customerId: any; // Expand ref if needed
-  staffId?: any;   // Expand ref
-  services: any[]; // Expand ref
+  customer?: { id: string; fullName: string; email?: string; phone?: string }; 
+  staff?: { id: string; fullName: string };
+  services: { id: string; name: string; price: number; duration: number }[];
   appointmentDate: string; // ISO date
   startTime: string; // HH:mm
   endTime: string;   // HH:mm
@@ -16,15 +16,18 @@ export interface Booking {
   notes?: string;
 }
 
-export const useBookings = (date?: Date, status?: string) => {
-  const queryDate = date ? date.toISOString().split('T')[0] : undefined;
+export const useBookings = (params?: { date?: Date; startDate?: Date; endDate?: Date; status?: string }) => {
+  const queryDate = params?.date ? params.date.toISOString().split('T')[0] : undefined;
+  const queryStartDate = params?.startDate ? params.startDate.toISOString().split('T')[0] : undefined;
+  const queryEndDate = params?.endDate ? params.endDate.toISOString().split('T')[0] : undefined;
   
   return useQuery({
-    queryKey: ['bookings', queryDate, status],
+    queryKey: ['bookings', queryDate, queryStartDate, queryEndDate, params?.status],
     queryFn: async () => {
-      let url = `/bookings?page=1&limit=50`; // Get more for calendar
+      let url = `/bookings?page=1&limit=100`; // Increased limit for calendar
       if (queryDate) url += `&date=${queryDate}`;
-      if (status) url += `&status=${status}`;
+      if (queryStartDate && queryEndDate) url += `&startDate=${queryStartDate}&endDate=${queryEndDate}`;
+      if (params?.status) url += `&status=${params.status}`;
       
       const { data } = await apiClient.get(url);
       return data.data; 

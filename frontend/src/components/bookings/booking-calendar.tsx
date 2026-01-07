@@ -21,12 +21,23 @@ const localizer = dateFnsLocalizer({
 
 interface BookingCalendarProps {
   bookings: Booking[];
+  view: any;
+  date: Date;
+  onNavigate: (date: Date) => void;
+  onView: (view: any) => void;
   onSelectEvent?: (booking: Booking) => void;
   onSelectSlot?: (slotInfo: any) => void;
 }
 
-export function BookingCalendar({ bookings, onSelectEvent, onSelectSlot }: BookingCalendarProps) {
-  const [view, setView] = useState<any>('week') // 'month', 'week', 'day', 'agenda'
+export function BookingCalendar({ 
+  bookings, 
+  view,
+  date,
+  onNavigate,
+  onView,
+  onSelectEvent, 
+  onSelectSlot 
+}: BookingCalendarProps) {
 
   // Transform bookings to calendar events
   const events = bookings.map(booking => {
@@ -39,8 +50,8 @@ export function BookingCalendar({ bookings, onSelectEvent, onSelectSlot }: Booki
      endDate.setHours(endH, endM, 0);
 
      return {
-         id: booking._id,
-         title: `${booking.customerId?.fullName || 'Customer'} - ${booking.status}`,
+         id: booking.id,
+         title: `${format(startDate, 'HH:mm')} ${booking.customer?.fullName || 'Guest'} - ${booking.services?.[0]?.name || 'Service'}`,
          start: startDate,
          end: endDate,
          resource: booking,
@@ -57,7 +68,9 @@ export function BookingCalendar({ bookings, onSelectEvent, onSelectSlot }: Booki
         endAccessor="end"
         style={{ height: '100%' }}
         view={view}
-        onView={setView}
+        date={date}
+        onNavigate={onNavigate}
+        onView={onView}
         onSelectEvent={(event) => onSelectEvent?.(event.resource)}
         onSelectSlot={onSelectSlot}
         selectable

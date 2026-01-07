@@ -142,12 +142,16 @@ export class BookingsService {
   }
 
   async findAll(query: any, user: User) {
-    const { page = 1, limit = 10, date, status } = query;
+    const { page = 1, limit = 50, date, startDate, endDate, status } = query;
     const qb = this.bookingRepository.createQueryBuilder('booking');
     qb.where('booking.shopId = :shopId', { shopId: user.shopId });
 
     if (date) {
         qb.andWhere('booking.appointmentDate = :date', { date });
+    }
+    
+    if (startDate && endDate) {
+        qb.andWhere('booking.appointmentDate >= :startDate AND booking.appointmentDate <= :endDate', { startDate, endDate });
     }
 
     if (status) {

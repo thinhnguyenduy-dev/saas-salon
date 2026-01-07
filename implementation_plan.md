@@ -34,9 +34,12 @@
 
 ## Phase 4: Partner Dashboard (Current Focus)
 **Goal:** Enable shop owners to manage their business.
-1.  **Calendar View**
-    *   Drag-and-drop calendar for staff schedules and appointments.
-    *   View Daily/Weekly/Monthly bookings.
+1.  **Calendar View** - ✅ Foundation Complete
+    *   [x] Drag-and-drop calendar UI (React Big Calendar).
+    *   [x] View Daily/Weekly/Monthly bookings.
+    *   [x] Real-time data fetching from backend.
+    *   [ ] "New Booking" Modal implementation.
+    *   [ ] Drag-and-drop updates (backend integration).
 2.  **Management Tables**
     *   Staff Management (Shift scheduling).
     *   Service Menu Editor.

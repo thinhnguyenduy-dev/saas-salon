@@ -11,8 +11,15 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(async (config) => {
   if (typeof window !== 'undefined') {
     const session = await getSession();
-    if (session?.user?.access_token) {
-      config.headers.Authorization = `Bearer ${session.user.access_token}`;
+    // console.log("[API Client] Session retrieved:", session);
+    
+    // Check for access_token in expected location
+    const token = (session as any)?.user?.access_token || (session as any)?.access_token;
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    } else {
+        // console.warn("[API Client] No access token found in session. User:", session?.user);
     }
   }
   return config;
@@ -24,9 +31,13 @@ apiClient.interceptors.response.use(
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      // Handle refresh token logic here or redirect to login
-      // For now, simpler approach:
-      await signOut();
+      console.warn("[API Client] 401 Unauthorized. Redirecting to login...");
+      
+      // Avoid infinite loops by NOT calling signOut() repeatedly
+      // Just redirect to login
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+         window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   },

@@ -20,8 +20,10 @@ export const config = {
           })
           
           console.log("Login response status:", res.status);
-          const user = await res.json()
-          console.log("Login response body:", user);
+          const data = await res.json()
+          console.log("Login response body:", data);
+          
+          const user = data.data || data; // Unwrap if wrapped in data property
 
           if (res.ok && user) {
             return user
