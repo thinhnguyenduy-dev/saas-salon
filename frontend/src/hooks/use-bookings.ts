@@ -16,18 +16,19 @@ export interface Booking {
   notes?: string;
 }
 
-export const useBookings = (params?: { date?: Date; startDate?: Date; endDate?: Date; status?: string }) => {
+export const useBookings = (params?: { date?: Date; startDate?: Date; endDate?: Date; status?: string; staffId?: string }) => {
   const queryDate = params?.date ? params.date.toISOString().split('T')[0] : undefined;
   const queryStartDate = params?.startDate ? params.startDate.toISOString().split('T')[0] : undefined;
   const queryEndDate = params?.endDate ? params.endDate.toISOString().split('T')[0] : undefined;
   
   return useQuery({
-    queryKey: ['bookings', queryDate, queryStartDate, queryEndDate, params?.status],
+    queryKey: ['bookings', queryDate, queryStartDate, queryEndDate, params?.status, params?.staffId],
     queryFn: async () => {
       let url = `/bookings?page=1&limit=100`; // Increased limit for calendar
       if (queryDate) url += `&date=${queryDate}`;
       if (queryStartDate && queryEndDate) url += `&startDate=${queryStartDate}&endDate=${queryEndDate}`;
       if (params?.status) url += `&status=${params.status}`;
+      if (params?.staffId) url += `&staffId=${params.staffId}`;
       
       const { data } = await apiClient.get(url);
       return data.data; 

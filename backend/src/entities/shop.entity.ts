@@ -13,6 +13,9 @@ export class Shop {
   @Column({ unique: true })
   slug: string;
 
+  @Column({ nullable: true })
+  image: string;
+
   // Flattened address or JSON? Let's use JSONB for flexibility now, or simple columns.
   // Address usually needs filtering (City/District). Let's use columns.
   @Column()

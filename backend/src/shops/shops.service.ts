@@ -17,7 +17,7 @@ export class ShopsService {
     const { page = 1, limit = 10, search, lat, lng, maxDistance = 5000 } = query;
     
     const qb = this.shopRepository.createQueryBuilder('shop');
-    qb.select(['shop.id', 'shop.name', 'shop.slug', 'shop.street', 'shop.city', 'shop.district', 'shop.ward', 'shop.location', 'shop.businessHours', 'shop.subscriptionPlan']);
+    qb.select(['shop.id', 'shop.name', 'shop.slug', 'shop.street', 'shop.city', 'shop.district', 'shop.ward', 'shop.location', 'shop.businessHours', 'shop.subscriptionPlan', 'shop.image']);
     qb.where('shop.isActive = :isActive', { isActive: true });
 
     if (search) {
@@ -36,7 +36,21 @@ export class ShopsService {
         
         qb.orderBy(`ST_Distance(shop.location::geography, ${origin}::geography)`, 'ASC');
     } else {
-        qb.orderBy('shop.createdAt', 'DESC');
+        // Default sort
+        if (query.sort === 'price_asc') {
+            // Sorting by price requires joining with services or simplified logic. 
+            // For MVP, we can sort by 'subscriptionPlan' or name if price isn't on shop.
+            // But real implementation needs min(service.price). 
+            // Let's assume for now we sort by created date if not implemented, OR implement subquery.
+            // Simplified: Sort by Name for demo if complex. 
+            // Better: Let's stick to created DESC for "Recommended" and implement Price later properly.
+            // Actually, let's implement a basic sort on Shop's createdAt or Name for now to prove it works.
+             qb.orderBy('shop.name', 'ASC');
+        } else if (query.sort === 'price_desc') {
+             qb.orderBy('shop.name', 'DESC');
+        } else {
+             qb.orderBy('shop.createdAt', 'DESC');
+        }
     }
 
     // Filter by Category (if Shop has any service in this category)

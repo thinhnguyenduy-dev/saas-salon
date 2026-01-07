@@ -33,7 +33,19 @@ export default function LoginPage() {
         toast.error("Invalid credentials")
       } else {
         toast.success("Welcome back!")
-        router.push("/dashboard")
+        
+        // Fetch session to check role
+        const sessionRes = await fetch("/api/auth/session")
+        const session = await sessionRes.json()
+        const role = session?.user?.role
+
+        if (role === "CUSTOMER") {
+             router.push("/search")
+        } else {
+             // OWNER, ADMIN, STAFF
+             router.push("/dashboard")
+        }
+        router.refresh() // Ensure server components update with new session
       }
     } catch (error) {
       toast.error("Something went wrong")

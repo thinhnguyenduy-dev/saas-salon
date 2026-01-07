@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "BeautyBook",
-  description: "The modern salon booking platform",
+  description: "Discover and book beauty, salon, spa, and wellness services near you",
 };
 
 import { Providers } from '@/components/providers';

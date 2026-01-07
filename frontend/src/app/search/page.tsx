@@ -11,12 +11,14 @@ export default async function SearchPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const params = await searchParams;
-  const { category, search, lat, lng } = params;
+  const { category, search, lat, lng, sort, price } = params;
   
   // Prepare query for API
   const query: any = {
       limit: 20,
       search: typeof search === 'string' ? search : undefined,
+      sort: typeof sort === 'string' ? sort : undefined,
+      price: typeof price === 'string' ? price : undefined,
   };
 
   if (typeof category === 'string') {
@@ -41,7 +43,7 @@ export default async function SearchPage({
       id: shop.id,
       name: shop.name,
       slug: shop.slug,
-      image: "https://images.unsplash.com/photo-1521590832896-7eaec04731db?auto=format&fit=crop&w=400&q=80", // Placeholder
+      image: shop.image || "https://placehold.co/600x400?text=Salon",
       rating: shop.rating || 5.0, // Default to 5.0 (New)
       reviewCount: shop.reviewCount || 0,
       address: `${shop.street}, ${shop.district}, ${shop.city}`,
@@ -88,11 +90,13 @@ export default async function SearchPage({
             </div>
 
             {/* Scrollable List */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 overflow-y-auto p-6">
                 {shops.length > 0 ? (
-                    shops.map(shop => (
-                        <ShopCard key={shop.id} {...shop} />
-                    ))
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6">
+                        {shops.map(shop => (
+                            <ShopCard key={shop.id} {...shop} />
+                        ))}
+                    </div>
                 ) : (
                     <div className="text-center py-10 text-muted-foreground">
                         No shops found matching your criteria.

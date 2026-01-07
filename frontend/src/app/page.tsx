@@ -2,83 +2,85 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/marketplace/search-bar";
 import { CategoryCarousel } from "@/components/marketplace/category-carousel";
+import { RecommendedSection } from "@/components/marketplace/recommended-section";
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       {/* Marketplace Header */}
       <header className="px-6 h-16 flex items-center justify-between border-b sticky top-0 bg-background/80 backdrop-blur z-50">
-        <Link href="/" className="font-bold text-2xl tracking-tight text-primary">
-          BeautyBook
+        <Link href="/" className="flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 24" className="h-6 w-auto">
+            <title>BeautyBook</title>
+            <text 
+              x="0" 
+              y="18" 
+              fontFamily="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" 
+              fontSize="20" 
+              fontWeight="600" 
+              fill="currentColor"
+              letterSpacing="-0.5"
+            >
+              BeautyBook
+            </text>
+          </svg>
         </Link>
         <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="hidden md:block text-sm font-medium text-muted-foreground hover:text-foreground">
-            For Business
+          <Link href="/login" className="hidden md:block text-sm font-semibold text-gray-700 hover:text-black">
+            Log in
           </Link>
-          <Link href="/login">
-            <Button variant="ghost">Log in</Button>
+          <Link href="/dashboard">
+             <Button variant="outline" className="rounded-full border-gray-300 hover:bg-gray-50 h-10 px-6 font-semibold">
+                List your business
+             </Button>
           </Link>
-          <Button>Sign Up</Button>
+          <Button variant="outline" className="rounded-full border-gray-300 hover:bg-gray-50 h-10 px-6 font-semibold bg-white">
+            Menu
+          </Button>
         </div>
       </header>
 
       <main className="flex-1">
         {/* Hero Section with Search */}
-        <section className="relative py-20 px-6 bg-gradient-to-b from-primary/5 to-transparent">
-          <div className="max-w-4xl mx-auto text-center space-y-8">
-            <h1 className="text-4xl md:text-6xl font-black tracking-tight text-foreground">
-              Book local beauty <br className="hidden md:block"/> and wellness services
+        {/* Hero Section with Search */}
+        <section className="relative pt-32 pb-24 px-6 overflow-hidden min-h-[600px] flex flex-col justify-center">
+          {/* Background Image with Overlay */}
+          <div className="absolute inset-0 z-0">
+               <img 
+                   src="https://loremflickr.com/1600/900/haircut,salon" 
+                   alt="Haircut Background" 
+                   className="w-full h-full object-cover"
+               />
+               <div className="absolute inset-0 bg-black/40" />
+               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          </div>
+
+          <div className="max-w-5xl mx-auto text-center space-y-8 relative z-10">
+            <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-white drop-shadow-md">
+              Book local selfcare services
             </h1>
-            <p className="text-xl text-muted-foreground max-w-xl mx-auto">
-              Find the best salons, spas and barbers near you and book instantly.
+            <p className="text-lg text-gray-100 max-w-2xl mx-auto font-medium drop-shadow-sm">
+              Discover top-rated salons, barbers, medspas, wellness studios and beauty experts trusted by millions worldwide
             </p>
             
-            <div className="translate-y-4">
+            <div className="pt-8 w-full flex justify-center">
               <SearchBar />
             </div>
+
+            <p className="pt-8 text-sm font-medium text-white/90 drop-shadow-sm">
+                <span className="font-bold text-white">227,917</span> appointments booked today
+            </p>
           </div>
         </section>
 
         {/* Categories Section */}
         <section className="py-12 px-6 max-w-7xl mx-auto w-full">
-          <h2 className="text-xl font-bold mb-6">Browse by Category</h2>
+          <h2 className="text-2xl font-bold mb-6 text-gray-900">Recently viewed</h2>
           <CategoryCarousel />
         </section>
 
-        {/* Recommended Section (Static for now) */}
-        <section className="py-12 px-6 max-w-7xl mx-auto w-full bg-muted/30 rounded-3xl mb-12">
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Recommended Near You</h2>
-              <p className="text-muted-foreground">Top rated venues based on your location</p>
-            </div>
-            <Button variant="link" className="text-primary font-bold">See all</Button>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="group bg-background rounded-xl overflow-hidden shadow-sm border hover:shadow-md transition-all cursor-pointer">
-                <div className="aspect-[4/3] bg-muted relative">
-                  {/* Placeholder Image */}
-                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground bg-gray-100">
-                    Venue Image
-                  </div>
-                  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-md text-xs font-bold shadow-sm">
-                    ⭐ 4.9 (120)
-                  </div>
-                </div>
-                <div className="p-4 space-y-2">
-                  <h3 className="font-bold text-lg group-hover:text-primary transition-colors">Luxe Hair Salon</h3>
-                  <p className="text-sm text-muted-foreground">1.2km • District 1, HCMC</p>
-                  <div className="flex gap-2 pt-2">
-                    <span className="text-xs font-medium bg-secondary px-2 py-1 rounded-md">Haircut</span>
-                    <span className="text-xs font-medium bg-secondary px-2 py-1 rounded-md">Color</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        {/* Recommended Section (Dynamic) */}
+        <RecommendedSection />
       </main>
 
       {/* Footer */}

@@ -1,0 +1,251 @@
+/* Custom Calendar Styles */
+
+/* Color palette for services */
+:root {
+  --calendar-teal: #4FD1C5;
+  --calendar-purple: #B794F4;
+  --calendar-blue: #63B3ED;
+  --calendar-pink: #F687B3;
+  --calendar-orange: #F6AD55;
+  --calendar-green: #68D391;
+  --calendar-yellow: #F6E05E;
+  --calendar-red: #FC8181;
+}
+
+/* Calendar container */
+.rbc-calendar {
+  font-family: inherit;
+}
+
+/* Toolbar styling */
+.rbc-toolbar {
+  display: none; /* We're using custom toolbar */
+}
+
+/* Time slots */
+.rbc-time-slot {
+  min-height: 40px;
+}
+
+.rbc-timeslot-group {
+  min-height: 80px;
+  border-left: 1px solid hsl(var(--border));
+}
+
+.rbc-time-column {
+  border-right: 1px solid hsl(var(--border));
+}
+
+.rbc-time-header-content {
+  border-left: 1px solid hsl(var(--border));
+}
+
+.rbc-time-content {
+  border-top: 1px solid hsl(var(--border));
+}
+
+/* Header styling */
+.rbc-header {
+  padding: 12px 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  border-bottom: 2px solid hsl(var(--border));
+  background: hsl(var(--muted));
+}
+
+.rbc-header + .rbc-header {
+  border-left: 1px solid hsl(var(--border));
+}
+
+/* Today highlighting */
+.rbc-today {
+  background-color: hsl(var(--accent) / 0.3);
+}
+
+/* Event styling */
+.rbc-event {
+  border-radius: 6px;
+  padding: 4px 8px;
+  border: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-size: 0.75rem;
+  line-height: 1.3;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.rbc-event:hover {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.rbc-event:focus {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Event labels */
+.rbc-event-label {
+  display: none;
+}
+
+.rbc-event-content {
+  font-weight: 500;
+  white-space: normal;
+  overflow: hidden;
+}
+
+/* Selected event */
+.rbc-selected {
+  box-shadow: 0 0 0 2px hsl(var(--ring));
+}
+
+/* Service-based color classes */
+.rbc-event.event-teal {
+  background-color: var(--calendar-teal);
+  color: #1a202c;
+}
+
+.rbc-event.event-purple {
+  background-color: var(--calendar-purple);
+  color: #1a202c;
+}
+
+.rbc-event.event-blue {
+  background-color: var(--calendar-blue);
+  color: #1a202c;
+}
+
+.rbc-event.event-pink {
+  background-color: var(--calendar-pink);
+  color: #1a202c;
+}
+
+.rbc-event.event-orange {
+  background-color: var(--calendar-orange);
+  color: #1a202c;
+}
+
+.rbc-event.event-green {
+  background-color: var(--calendar-green);
+  color: #1a202c;
+}
+
+.rbc-event.event-yellow {
+  background-color: var(--calendar-yellow);
+  color: #1a202c;
+}
+
+.rbc-event.event-red {
+  background-color: var(--calendar-red);
+  color: #1a202c;
+}
+
+/* Current time indicator */
+.rbc-current-time-indicator {
+  background-color: hsl(var(--destructive));
+  height: 2px;
+}
+
+/* Time gutter (left column with times) */
+.rbc-time-gutter {
+  background: hsl(var(--background));
+}
+
+.rbc-label {
+  padding: 0 8px;
+  font-size: 0.75rem;
+  color: hsl(var(--muted-foreground));
+}
+
+/* Agenda view */
+.rbc-agenda-view {
+  border: 1px solid hsl(var(--border));
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.rbc-agenda-table {
+  border: none;
+}
+
+.rbc-agenda-date-cell,
+.rbc-agenda-time-cell,
+.rbc-agenda-event-cell {
+  padding: 12px;
+  border-bottom: 1px solid hsl(var(--border));
+}
+
+/* Day/Week view grid */
+.rbc-day-slot .rbc-time-slot {
+  border-top: 1px solid hsl(var(--border) / 0.3);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .rbc-time-slot {
+    min-height: 30px;
+  }
+  
+  .rbc-timeslot-group {
+    min-height: 60px;
+  }
+  
+  .rbc-event {
+    font-size: 0.7rem;
+    padding: 2px 4px;
+  }
+  
+  .rbc-header {
+    font-size: 0.75rem;
+    padding: 8px 4px;
+  }
+}
+
+/* Custom event content layout */
+.booking-event-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.booking-event-time {
+  font-weight: 600;
+  font-size: 0.7rem;
+}
+
+.booking-event-customer {
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.booking-event-service {
+  font-size: 0.7rem;
+  opacity: 0.9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Status indicators */
+.booking-event-status {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+.booking-event-status.confirmed {
+  background-color: #48bb78;
+}
+
+.booking-event-status.pending {
+  background-color: #ed8936;
+}
+
+.booking-event-status.cancelled {
+  background-color: #f56565;
+}
