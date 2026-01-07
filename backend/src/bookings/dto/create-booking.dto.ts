@@ -1,19 +1,19 @@
-import { IsDateString, IsMongoId, IsNotEmpty, IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsDateString, IsUUID, IsNotEmpty, IsOptional, IsString, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateBookingDto {
   @ApiProperty({ example: 'customerId123' })
-  @IsMongoId()
+  @IsUUID()
   @IsNotEmpty()
   customerId: string;
 
   @ApiProperty({ example: ['serviceId1', 'serviceId2'] })
-  @IsMongoId({ each: true })
+  @IsUUID('4', { each: true })
   @IsNotEmpty()
   services: string[];
 
   @ApiProperty({ example: 'staffId123', required: false })
-  @IsMongoId()
+  @IsUUID()
   @IsOptional()
   staffId?: string;
 

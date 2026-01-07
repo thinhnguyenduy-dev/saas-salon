@@ -1,9 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { BullModule } from '@nestjs/bullmq';
 import { ScheduleModule } from '@nestjs/schedule';
+import { DataSource } from 'typeorm';
+import { InjectDataSource } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
@@ -13,6 +15,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { CustomersModule } from './customers/customers.module';
 import { StaffModule } from './staff/staff.module';
 import { BookingsModule } from './bookings/bookings.module';
+import { ShopsModule } from './shops/shops.module';
 
 @Module({
   imports: [
@@ -22,26 +25,19 @@ import { BookingsModule } from './bookings/bookings.module';
       envFilePath: ['.env.local', '.env', '../../.env'],
     }),
 
-    // Database (MongoDB)
-    MongooseModule.forRootAsync({
+    // Database (Postgres with TypeORM)
+    TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => {
-        const host = configService.get('DB_HOST', 'localhost');
-        const port = configService.get('DB_PORT', '27017');
-        const database = configService.get('DB_DATABASE', 'salonpro');
-        const username = configService.get('DB_USERNAME');
-        const password = configService.get('DB_PASSWORD');
-        
-        // Build connection string with or without auth
-        let uri: string;
-        if (username && password) {
-          uri = `mongodb://${username}:${password}@${host}:${port}/${database}?authSource=admin`;
-        } else {
-          uri = `mongodb://${host}:${port}/${database}`;
-        }
-        
-        return { uri };
-      },
+      useFactory: async (configService: ConfigService) => ({
+        type: 'postgres',
+        host: configService.get<string>('DB_HOST', 'localhost'),
+        port: configService.get<number>('DB_PORT', 5432),
+        username: configService.get<string>('DB_USERNAME'),
+        password: configService.get<string>('DB_PASSWORD'),
+        database: configService.get<string>('DB_DATABASE', 'salonpro'),
+        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        synchronize: true, // Auto-create tables (Dev only)
+      }),
       inject: [ConfigService],
     }),
 
@@ -82,8 +78,17 @@ import { BookingsModule } from './bookings/bookings.module';
     StaffModule,
 
     BookingsModule,
+
+    ShopsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+export class AppModule {
+  constructor(@InjectDataSource() private dataSource: DataSource) {}
+
+  async onModuleInit() {
+    await this.dataSource.query('CREATE EXTENSION IF NOT EXISTS postgis');
+    await this.dataSource.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
+  }
+}

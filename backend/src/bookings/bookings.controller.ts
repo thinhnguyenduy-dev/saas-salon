@@ -5,8 +5,10 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { User } from '../schemas/user.schema';
+import { User } from '../entities/user.entity';
 import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { CreatePublicBookingDto } from './dto/create-public-booking.dto';
+import { Public } from '../common/decorators/public.decorator';
 
 @ApiTags('Bookings')
 @ApiBearerAuth()
@@ -14,6 +16,21 @@ import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 @Controller('bookings')
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
+
+  @Public()
+  @Post('public')
+  createPublic(@Body() createDto: CreatePublicBookingDto) {
+    return this.bookingsService.createPublic(createDto);
+  }
+
+  @Public()
+  @Get('slots')
+  @ApiQuery({ name: 'date', required: true, type: String })
+  @ApiQuery({ name: 'serviceIds', required: true, type: String }) // or array
+  @ApiQuery({ name: 'staffId', required: false, type: String })
+  getSlots(@Query() query: any) {
+    return this.bookingsService.getAvailableSlots(query);
+  }
 
   @Post()
   create(@Body() createBookingDto: CreateBookingDto, @CurrentUser() user: User) {

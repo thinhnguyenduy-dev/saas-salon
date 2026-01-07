@@ -1,7 +1,7 @@
 import { PartialType } from '@nestjs/swagger';
 import { CreateBookingDto } from './create-booking.dto';
 import { IsEnum, IsOptional } from 'class-validator';
-import { BookingStatus } from '../../schemas/booking.schema';
+import { BookingStatus } from '../../entities/booking.entity';
 
 export class UpdateBookingDto extends PartialType(CreateBookingDto) {
   @IsEnum(BookingStatus)

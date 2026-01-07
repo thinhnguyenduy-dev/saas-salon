@@ -1,42 +1,52 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { PaginateModel } from '../common/plugins/paginate.plugin';
-import { Staff, StaffDocument } from '../schemas/staff.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Staff } from '../entities/staff.entity';
 import { CreateStaffDto } from './dto/create-staff.dto';
 import { UpdateStaffDto } from './dto/update-staff.dto';
-import { User } from '../schemas/user.schema';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class StaffService {
   constructor(
-    @InjectModel(Staff.name) private staffModel: PaginateModel<StaffDocument>,
+    @InjectRepository(Staff) private staffRepository: Repository<Staff>,
   ) {}
 
   async create(createStaffDto: CreateStaffDto, user: User) {
-    const staff = new this.staffModel({
+    const staff = this.staffRepository.create({
       ...createStaffDto,
       shopId: user.shopId,
     });
-    return staff.save();
+    return this.staffRepository.save(staff);
   }
 
   async findAll(query: any, user: User) {
     const { page = 1, limit = 10, search } = query;
-    const filter: any = { shopId: user.shopId };
+    const qb = this.staffRepository.createQueryBuilder('staff');
+    qb.where('staff.shopId = :shopId', { shopId: user.shopId });
 
     if (search) {
-      filter.fullName = { $regex: search, $options: 'i' };
+      qb.andWhere('staff.fullName ILIKE :search', { search: `%${search}%` });
     }
 
-    return this.staffModel.paginate(filter, {
-      page,
-      limit,
-      sort: { createdAt: -1 },
-    });
+    qb.orderBy('staff.createdAt', 'DESC');
+    qb.skip((page - 1) * limit).take(limit);
+
+    const [items, total] = await qb.getManyAndCount();
+
+    return {
+      docs: items,
+      totalDocs: total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string, user: User) {
-    const staff = await this.staffModel.findOne({ _id: id, shopId: user.shopId });
+    const staff = await this.staffRepository.findOne({ 
+        where: { id, shopId: user.shopId } 
+    });
     if (!staff) {
       throw new NotFoundException('Staff not found');
     }
@@ -44,21 +54,16 @@ export class StaffService {
   }
 
   async update(id: string, updateStaffDto: UpdateStaffDto, user: User) {
-    const staff = await this.staffModel.findOneAndUpdate(
-      { _id: id, shopId: user.shopId },
-      updateStaffDto,
-      { new: true },
-    );
-
-    if (!staff) {
-      throw new NotFoundException('Staff not found');
-    }
-    return staff;
+    const staff = await this.staffRepository.findOne({ where: { id, shopId: user.shopId } });
+    if (!staff) throw new NotFoundException('Staff not found');
+    
+    Object.assign(staff, updateStaffDto);
+    return this.staffRepository.save(staff);
   }
 
   async remove(id: string, user: User) {
-    const result = await this.staffModel.deleteOne({ _id: id, shopId: user.shopId });
-    if (result.deletedCount === 0) {
+    const result = await this.staffRepository.delete({ id, shopId: user.shopId });
+    if (result.affected === 0) {
       throw new NotFoundException('Staff not found');
     }
     return { message: 'Staff deleted successfully' };

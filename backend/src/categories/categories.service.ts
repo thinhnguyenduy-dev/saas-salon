@@ -1,42 +1,50 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { PaginateModel } from '../common/plugins/paginate.plugin';
-import { ServiceCategory, ServiceCategoryDocument } from '../schemas/service-category.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ServiceCategory } from '../entities/service-category.entity';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { User } from '../schemas/user.schema';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class CategoriesService {
   constructor(
-    @InjectModel(ServiceCategory.name) private categoryModel: PaginateModel<ServiceCategoryDocument>,
+    @InjectRepository(ServiceCategory) private categoryRepository: Repository<ServiceCategory>,
   ) {}
 
   async create(createCategoryDto: CreateCategoryDto, user: User) {
-    const category = new this.categoryModel({
+    const category = this.categoryRepository.create({
       ...createCategoryDto,
       shopId: user.shopId,
     });
-    return category.save();
+    return this.categoryRepository.save(category);
   }
 
   async findAll(query: any, user: User) {
-    const { page = 1, limit = 100, search } = query; // Default limit higher for categories
-    const filter: any = { shopId: user.shopId };
+    const { page = 1, limit = 100, search } = query;
+    const qb = this.categoryRepository.createQueryBuilder('category');
+    qb.where('category.shopId = :shopId', { shopId: user.shopId });
 
     if (search) {
-      filter.name = { $regex: search, $options: 'i' };
+      qb.andWhere('category.name ILIKE :search', { search: `%${search}%` });
     }
 
-    return this.categoryModel.paginate(filter, {
-      page,
-      limit,
-      sort: { name: 1 },
-    });
+    qb.orderBy('category.name', 'ASC');
+    qb.skip((page - 1) * limit).take(limit);
+
+    const [items, total] = await qb.getManyAndCount();
+
+    return {
+      docs: items,
+      totalDocs: total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string, user: User) {
-    const category = await this.categoryModel.findOne({ _id: id, shopId: user.shopId });
+    const category = await this.categoryRepository.findOne({ where: { id, shopId: user.shopId } });
     if (!category) {
       throw new NotFoundException('Category not found');
     }
@@ -44,21 +52,13 @@ export class CategoriesService {
   }
 
   async update(id: string, updateCategoryDto: UpdateCategoryDto, user: User) {
-    const category = await this.categoryModel.findOneAndUpdate(
-      { _id: id, shopId: user.shopId },
-      updateCategoryDto,
-      { new: true },
-    );
-
-    if (!category) {
-      throw new NotFoundException('Category not found');
-    }
-    return category;
+    await this.categoryRepository.update({ id, shopId: user.shopId }, updateCategoryDto);
+    return this.findOne(id, user);
   }
 
   async remove(id: string, user: User) {
-    const result = await this.categoryModel.deleteOne({ _id: id, shopId: user.shopId });
-    if (result.deletedCount === 0) {
+    const result = await this.categoryRepository.delete({ id, shopId: user.shopId });
+    if (result.affected === 0) {
       throw new NotFoundException('Category not found');
     }
     return { message: 'Category deleted successfully' };

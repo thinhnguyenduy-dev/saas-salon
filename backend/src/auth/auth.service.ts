@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { UserRole } from '../schemas/user.schema';
+import { UserRole } from '../entities/user.entity';
 
 @Injectable()
 export class AuthService {
@@ -20,21 +20,22 @@ export class AuthService {
       return null;
     }
 
-    console.log('[AuthService] User found. ID:', user._id);
-    console.log('[AuthService] Has password field?', !!user.password);
+    // console.log('[AuthService] User found. ID:', user.id);
+    // console.log('[AuthService] Has password field?', !!user.password);
     
     const isMatch = await user.comparePassword(pass);
-    console.log(`[AuthService] Password match result: ${isMatch}`);
+    // console.log(`[AuthService] Password match result: ${isMatch}`);
 
     if (user && isMatch) {
-      const { password, ...result } = user.toObject();
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password, ...result } = user;
       return result;
     }
     return null;
   }
 
   async login(user: any) {
-    const payload = { email: user.email, sub: user._id, role: user.role };
+    const payload = { email: user.email, sub: user.id, role: user.role };
     return {
       access_token: this.jwtService.sign(payload),
       refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),

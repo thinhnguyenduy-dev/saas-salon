@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { StaffService } from './staff.service';
 import { StaffController } from './staff.controller';
-import { Staff, StaffSchema } from '../schemas/staff.schema';
+import { Staff } from '../entities/staff.entity';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Staff.name, schema: StaffSchema }]),
+    TypeOrmModule.forFeature([Staff]),
   ],
   controllers: [StaffController],
   providers: [StaffService],

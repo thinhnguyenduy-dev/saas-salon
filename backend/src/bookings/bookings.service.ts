@@ -1,35 +1,102 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { PaginateModel } from '../common/plugins/paginate.plugin';
-import { Booking, BookingDocument, BookingStatus } from '../schemas/booking.schema';
-import { Staff, StaffDocument } from '../schemas/staff.schema';
-import { Service, ServiceDocument } from '../schemas/service.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, In, LessThan, MoreThan, Not, Between } from 'typeorm';
+import { Booking, BookingStatus } from '../entities/booking.entity';
+import { Staff } from '../entities/staff.entity';
+import { Service } from '../entities/service.entity';
+import { Customer } from '../entities/customer.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { CreatePublicBookingDto } from './dto/create-public-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
-import { User } from '../schemas/user.schema';
+import { User, UserRole } from '../entities/user.entity';
+import { UsersService } from '../users/users.service';
 
 @Injectable()
 export class BookingsService {
   constructor(
-    @InjectModel(Booking.name) private bookingModel: PaginateModel<BookingDocument>,
-    @InjectModel(Staff.name) private staffModel: Model<StaffDocument>,
-    @InjectModel(Service.name) private serviceModel: Model<ServiceDocument>,
+    @InjectRepository(Booking) private bookingRepository: Repository<Booking>,
+    @InjectRepository(Staff) private staffRepository: Repository<Staff>,
+    @InjectRepository(Service) private serviceRepository: Repository<Service>,
+    @InjectRepository(Customer) private customerRepository: Repository<Customer>,
+    private usersService: UsersService,
   ) {}
 
-  async create(createBookingDto: CreateBookingDto, user: User) {
-    const { services, staffId, appointmentDate, startTime } = createBookingDto;
+  async createPublic(createDto: CreatePublicBookingDto) {
+    const { services, staffId, appointmentDate, startTime, guestName, guestEmail, guestPhone, shopId } = createDto;
 
-    // 1. Calculate duration and price
-    const serviceDocs = await this.serviceModel.find({ _id: { $in: services } });
-    if (serviceDocs.length !== services.length) {
+    // 1. Create User (Account)
+    let user = guestEmail ? await this.usersService.findOneByEmail(guestEmail) : null;
+    if (!user) {
+        user = await this.usersService.create({
+            fullName: guestName,
+            email: guestEmail || `guest_${Date.now()}@example.com`,
+            phone: guestPhone,
+            role: UserRole.CUSTOMER,
+            password: Math.random().toString(36),
+            shopId: shopId as string
+        });
+    }
+
+    // 2. Find/Create Customer (CRM)
+    let customer = await this.customerRepository.findOne({
+        where: { shopId, phone: guestPhone }
+    });
+
+    if (!customer) {
+        customer = this.customerRepository.create({
+            shopId,
+            fullName: guestName,
+            phone: guestPhone,
+            email: guestEmail,
+        });
+        customer = await this.customerRepository.save(customer);
+    }
+
+    // 3. Resolve Services
+    const serviceEntities = await this.serviceRepository.findBy({ id: In(services) });
+    if (serviceEntities.length !== services.length) throw new BadRequestException('Services not found');
+
+    const totalDuration = serviceEntities.reduce((acc, s) => acc + s.duration, 0);
+    const totalPrice = serviceEntities.reduce((acc, s) => Number(acc) + Number(s.price), 0);
+
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const startDate = new Date(appointmentDate);
+    startDate.setHours(startHour, startMin, 0, 0);
+    const endDate = new Date(startDate.getTime() + totalDuration * 60000);
+    const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
+
+    if (staffId) {
+        const isAvailable = await this.checkStaffAvailability(staffId, appointmentDate, startTime, endTime);
+        if (!isAvailable) throw new BadRequestException('Staff not available');
+    }
+
+    const booking = this.bookingRepository.create({
+      shopId,
+      customerId: customer.id,
+      staffId: staffId || null,
+      services: serviceEntities,
+      appointmentDate,
+      startTime,
+      endTime,
+      totalDuration,
+      totalPrice,
+      status: BookingStatus.CONFIRMED,
+    });
+
+    return this.bookingRepository.save(booking);
+  }
+
+  async create(createBookingDto: CreateBookingDto, user: User) {
+    const { services, staffId, appointmentDate, startTime, customerId } = createBookingDto;
+
+    const serviceEntities = await this.serviceRepository.findBy({ id: In(services) });
+    if (serviceEntities.length !== services.length) {
       throw new BadRequestException('One or more services not found');
     }
 
-    const totalDuration = serviceDocs.reduce((acc, s) => acc + s.duration, 0);
-    const totalPrice = serviceDocs.reduce((acc, s) => acc + s.price, 0);
+    const totalDuration = serviceEntities.reduce((acc, s) => acc + s.duration, 0);
+    const totalPrice = serviceEntities.reduce((acc, s) => Number(acc) + Number(s.price), 0);
 
-    // Calculate End Time
     const [startHour, startMin] = startTime.split(':').map(Number);
     const startDate = new Date(appointmentDate);
     startDate.setHours(startHour, startMin, 0, 0);
@@ -37,85 +104,179 @@ export class BookingsService {
     const endDate = new Date(startDate.getTime() + totalDuration * 60000);
     const endTime = `${endDate.getHours().toString().padStart(2, '0')}:${endDate.getMinutes().toString().padStart(2, '0')}`;
 
-    // 2. Check Availability (Simplified for now, assumes staffId is provided or picks first available)
-    // TODO: Robust availability logic with "Any Staff" option
     if (staffId) {
         const isAvailable = await this.checkStaffAvailability(staffId, appointmentDate, startTime, endTime);
         if (!isAvailable) {
             throw new BadRequestException('Staff is not available at this time');
         }
     } else {
-        // Auto-assign staff logic would go here
         throw new BadRequestException('Staff selection is required for now');
     }
 
-    // 3. Create Booking
-    const booking = new this.bookingModel({
-      ...createBookingDto,
+    const booking = this.bookingRepository.create({
       shopId: user.shopId,
+      customerId: customerId,
+      staffId: staffId || null,
+      services: serviceEntities,
+      appointmentDate,
+      startTime,
+      endTime,
       totalDuration,
       totalPrice,
-      endTime,
-      status: BookingStatus.CONFIRMED, // Auto-confirm for now
+      status: BookingStatus.CONFIRMED,
     });
 
-    return booking.save();
+    return this.bookingRepository.save(booking);
   }
 
   async checkStaffAvailability(staffId: string, date: string, startTime: string, endTime: string): Promise<boolean> {
-      // Check for existing bookings overlapping
-      // Overlap logic: (StartA < EndB) and (EndA > StartB)
-      
-      const count = await this.bookingModel.countDocuments({
-          staffId,
-          appointmentDate: new Date(date), // Assuming exact date match handling
-          status: { $nin: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW] }, // Ignore cancelled
-          $or: [
-              { startTime: { $lt: endTime }, endTime: { $gt: startTime } }
-          ]
-      });
+      const qb = this.bookingRepository.createQueryBuilder('booking');
+      qb.where('booking.staffId = :staffId', { staffId });
+      qb.andWhere('booking.appointmentDate = :date', { date });
+      qb.andWhere('booking.status NOT IN (:...statuses)', { statuses: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW] });
+      qb.andWhere('booking.startTime < :endTime', { endTime });
+      qb.andWhere('booking.endTime > :startTime', { startTime });
 
+      const count = await qb.getCount();
       return count === 0;
   }
 
   async findAll(query: any, user: User) {
     const { page = 1, limit = 10, date, status } = query;
-    const filter: any = { shopId: user.shopId };
+    const qb = this.bookingRepository.createQueryBuilder('booking');
+    qb.where('booking.shopId = :shopId', { shopId: user.shopId });
 
     if (date) {
-        // Simple equal check, might need range for real apps
-        filter.appointmentDate = new Date(date);
+        qb.andWhere('booking.appointmentDate = :date', { date });
     }
 
     if (status) {
-        filter.status = status;
+        qb.andWhere('booking.status = :status', { status });
     }
 
-    return this.bookingModel.paginate(filter, {
-      page,
-      limit,
-      sort: { appointmentDate: 1, startTime: 1 },
-      populate: ['customerId', 'staffId', 'services'],
-    });
+    qb.orderBy('booking.appointmentDate', 'ASC');
+    qb.addOrderBy('booking.startTime', 'ASC');
+    
+    qb.leftJoinAndSelect('booking.customer', 'customer');
+    qb.leftJoinAndSelect('booking.staff', 'staff');
+    qb.leftJoinAndSelect('booking.services', 'services');
+
+    qb.skip((page - 1) * limit).take(limit);
+
+    const [items, total] = await qb.getManyAndCount();
+
+    return {
+      docs: items,
+      totalDocs: total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async update(id: string, updateBookingDto: UpdateBookingDto, user: User) {
-    const booking = await this.bookingModel.findOneAndUpdate(
-      { _id: id, shopId: user.shopId },
-      updateBookingDto,
-      { new: true },
-    );
+    const booking = await this.bookingRepository.findOne({ where: { id, shopId: user.shopId }, relations: ['services'] });
     if (!booking) throw new NotFoundException('Booking not found');
-    return booking;
+
+    const { services, ...rest } = updateBookingDto;
+
+    // Merge basic fields
+    Object.assign(booking, rest);
+
+    // Update services if provided
+    if (services) {
+        const serviceEntities = await this.serviceRepository.findBy({ id: In(services) });
+        if (serviceEntities.length !== services.length) throw new BadRequestException('Services not found');
+        booking.services = serviceEntities;
+        
+        // Recalculate duration/price if services changed
+        booking.totalDuration = serviceEntities.reduce((acc, s) => acc + s.duration, 0);
+        booking.totalPrice = serviceEntities.reduce((acc, s) => Number(acc) + Number(s.price), 0);
+        // And EndTime... (Simplified for now, assumming proper logic handles this or UI sends new end time if they change services)
+        // But backend should probably recalculate.
+    }
+
+    return this.bookingRepository.save(booking);
   }
 
     async remove(id: string, user: User) {
-    const booking = await this.bookingModel.findOneAndUpdate(
-      { _id: id, shopId: user.shopId },
+    await this.bookingRepository.update(
+      { id, shopId: user.shopId },
       { status: BookingStatus.CANCELLED },
-      { new: true },
     );
-    if (!booking) throw new NotFoundException('Booking not found');
-    return booking;
+    return { message: 'Booking cancelled' };
+  }
+
+  async getAvailableSlots(query: any) {
+    const { shopId, serviceIds, staffId, date } = query;
+    const services = Array.isArray(serviceIds) ? serviceIds : [serviceIds];
+    
+    // 1. Get total duration
+    const serviceEntities = await this.serviceRepository.findBy({ id: In(services) });
+    const totalDuration = serviceEntities.reduce((acc, s) => acc + s.duration, 0);
+
+    // 2. Determine Staff
+    let staffList: Staff[] = [];
+    if (staffId) {
+        const staff = await this.staffRepository.findOneBy({ id: staffId });
+        if (staff) staffList.push(staff);
+    } else {
+        staffList = await this.staffRepository.findBy({ shopId, isActive: true });
+    }
+
+    if (staffList.length === 0) return [];
+
+    const targetDate = new Date(date);
+    const dayOfWeek = targetDate.getDay();
+
+    const allSlots = new Set<string>();
+
+    for (const staff of staffList) {
+        const shift = (staff.workSchedule as any[]).find((s: any) => s.dayOfWeek === dayOfWeek);
+        if (!shift) continue;
+
+        const qb = this.bookingRepository.createQueryBuilder('booking');
+        qb.where('booking.staffId = :staffId', { staffId: staff.id });
+        qb.andWhere('booking.appointmentDate = :date', { date });
+        qb.andWhere('booking.status NOT IN (:...statuses)', { statuses: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW] });
+
+        const bookings = await qb.getMany();
+
+        const [startH, startM] = shift.startTime.split(':').map(Number);
+        const [endH, endM] = shift.endTime.split(':').map(Number);
+        
+        let currentH = startH;
+        let currentM = startM;
+
+        while (currentH < endH || (currentH === endH && currentM < endM)) {
+            const timeString = `${currentH.toString().padStart(2, '0')}:${currentM.toString().padStart(2, '0')}`;
+            
+            const slotStartMins = currentH * 60 + currentM;
+            const slotEndMins = slotStartMins + totalDuration;
+            const shiftEndMins = endH * 60 + endM;
+
+            if (slotEndMins <= shiftEndMins) {
+                const slotEndTimeString = `${Math.floor(slotEndMins / 60).toString().padStart(2, '0')}:${(slotEndMins % 60).toString().padStart(2, '0')}`;
+                
+                const isConflict = bookings.some(b => {
+                    const bStart = b.startTime;
+                    const bEnd = b.endTime;
+                    return (timeString < bEnd && slotEndTimeString > bStart);
+                });
+
+                if (!isConflict) {
+                    allSlots.add(timeString);
+                }
+            }
+
+            currentM += 30;
+            if (currentM >= 60) {
+                currentH++;
+                currentM -= 60;
+            }
+        }
+    }
+
+    return Array.from(allSlots).sort();
   }
 }

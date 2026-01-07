@@ -9,9 +9,11 @@ const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use(async (config) => {
-  const session = await getSession();
-  if (session?.user?.access_token) {
-    config.headers.Authorization = `Bearer ${session.user.access_token}`;
+  if (typeof window !== 'undefined') {
+    const session = await getSession();
+    if (session?.user?.access_token) {
+      config.headers.Authorization = `Bearer ${session.user.access_token}`;
+    }
   }
   return config;
 });

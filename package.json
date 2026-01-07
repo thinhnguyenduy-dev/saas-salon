@@ -1,0 +1,21 @@
+{
+  "name": "saas-salon-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "db:up": "docker-compose --env-file backend/.env up -d",
+    "db:down": "docker-compose --env-file backend/.env down",
+    "db:logs": "docker-compose logs -f",
+    "dev:backend": "pnpm --filter api dev",
+    "dev:frontend": "pnpm --filter web dev",
+    "dev": "pnpm --recursive --parallel run dev",
+    "install:all": "pnpm install",
+    "build": "pnpm --recursive run build"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "concurrently": "^8.0.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^4.1.18"
+  }
+}

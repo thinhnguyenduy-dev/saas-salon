@@ -1,48 +1,57 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { PaginateModel } from '../common/plugins/paginate.plugin';
-import { Service, ServiceDocument } from '../schemas/service.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Service } from '../entities/service.entity';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
-import { User } from '../schemas/user.schema';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class ServicesService {
   constructor(
-    @InjectModel(Service.name) private serviceModel: PaginateModel<ServiceDocument>,
+    @InjectRepository(Service) private serviceRepository: Repository<Service>,
   ) {}
 
   async create(createServiceDto: CreateServiceDto, user: User) {
-    const service = new this.serviceModel({
+    const service = this.serviceRepository.create({
       ...createServiceDto,
-      shopId: user.shopId, // Link to the user's shop
+      shopId: user.shopId,
     });
-    return service.save();
+    return this.serviceRepository.save(service);
   }
 
   async findAll(query: any, user: User) {
     const { page = 1, limit = 10, search, categoryId } = query;
-    const filter: any = { shopId: user.shopId };
+    const qb = this.serviceRepository.createQueryBuilder('service');
+    qb.where('service.shopId = :shopId', { shopId: user.shopId });
 
     if (search) {
-      filter.name = { $regex: search, $options: 'i' };
+      qb.andWhere('service.name ILIKE :search', { search: `%${search}%` });
     }
     
     if (categoryId) {
-        filter.categoryId = categoryId;
+        qb.andWhere('service.categoryId = :categoryId', { categoryId });
     }
 
-    return this.serviceModel.paginate(filter, {
-      page,
-      limit,
-      sort: { createdAt: -1 },
-      populate: ['categoryId'],
-    });
+    qb.orderBy('service.createdAt', 'DESC');
+    qb.skip((page - 1) * limit).take(limit);
+    // qb.leftJoinAndSelect('service.category', 'category'); // If needed
+
+    const [items, total] = await qb.getManyAndCount();
+
+    return {
+      docs: items,
+      totalDocs: total,
+      page: Number(page),
+      limit: Number(limit),
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string, user: User) {
-    const service = await this.serviceModel.findOne({ _id: id, shopId: user.shopId });
+    const service = await this.serviceRepository.findOne({ 
+        where: { id, shopId: user.shopId } 
+    });
     if (!service) {
       throw new NotFoundException('Service not found');
     }
@@ -50,21 +59,14 @@ export class ServicesService {
   }
 
   async update(id: string, updateServiceDto: UpdateServiceDto, user: User) {
-    const service = await this.serviceModel.findOneAndUpdate(
-      { _id: id, shopId: user.shopId },
-      updateServiceDto,
-      { new: true },
-    );
-
-    if (!service) {
-      throw new NotFoundException('Service not found');
-    }
-    return service;
+    // TypeORM update does not return updated entity by default
+    await this.serviceRepository.update({ id, shopId: user.shopId }, updateServiceDto);
+    return this.findOne(id, user);
   }
 
   async remove(id: string, user: User) {
-    const result = await this.serviceModel.deleteOne({ _id: id, shopId: user.shopId });
-    if (result.deletedCount === 0) {
+    const result = await this.serviceRepository.delete({ id, shopId: user.shopId });
+    if (result.affected === 0) {
       throw new NotFoundException('Service not found');
     }
     return { message: 'Service deleted successfully' };

@@ -1,107 +1,121 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Calendar, Users, Scissors } from "lucide-react";
+import { SearchBar } from "@/components/marketplace/search-bar";
+import { CategoryCarousel } from "@/components/marketplace/category-carousel";
 
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      {/* Header */}
-      <header className="px-6 h-16 flex items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
-        <div className="flex items-center gap-2 font-bold text-xl">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
-            S
-          </div>
-          SalonPro
-        </div>
-        <nav className="hidden md:flex gap-6 text-sm font-medium text-muted-foreground">
-          <Link href="#features" className="hover:text-foreground transition">Features</Link>
-          <Link href="#pricing" className="hover:text-foreground transition">Pricing</Link>
-          <Link href="#about" className="hover:text-foreground transition">About</Link>
-        </nav>
-        <div className="flex gap-4">
-          <Link href="/api/auth/signin">
+      {/* Marketplace Header */}
+      <header className="px-6 h-16 flex items-center justify-between border-b sticky top-0 bg-background/80 backdrop-blur z-50">
+        <Link href="/" className="font-bold text-2xl tracking-tight text-primary">
+          BeautyBook
+        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard" className="hidden md:block text-sm font-medium text-muted-foreground hover:text-foreground">
+            For Business
+          </Link>
+          <Link href="/login">
             <Button variant="ghost">Log in</Button>
           </Link>
-          <Link href="/dashboard">
-            <Button>Get Started</Button>
-          </Link>
+          <Button>Sign Up</Button>
         </div>
       </header>
 
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="py-24 md:py-32 px-6 text-center space-y-8 max-w-5xl mx-auto">
-          <div className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80">
-            v1.0 Now Available
-          </div>
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
-            The modern operating system for <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600">elite salons</span>.
-          </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Streamline appointments, manage staff, and retain customers with the all-in-one platform built for growth.
-          </p>
-          <div className="flex justify-center gap-4 pt-4">
-             <Link href="/dashboard">
-              <Button size="lg" className="gap-2 h-12 px-8 text-base">
-                Start Free Trial <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
-            <Button size="lg" variant="outline" className="h-12 px-8 text-base">
-              Book Demo
-            </Button>
+        {/* Hero Section with Search */}
+        <section className="relative py-20 px-6 bg-gradient-to-b from-primary/5 to-transparent">
+          <div className="max-w-4xl mx-auto text-center space-y-8">
+            <h1 className="text-4xl md:text-6xl font-black tracking-tight text-foreground">
+              Book local beauty <br className="hidden md:block"/> and wellness services
+            </h1>
+            <p className="text-xl text-muted-foreground max-w-xl mx-auto">
+              Find the best salons, spas and barbers near you and book instantly.
+            </p>
+            
+            <div className="translate-y-4">
+              <SearchBar />
+            </div>
           </div>
         </section>
 
-        {/* Features Grid */}
-        <section id="features" className="py-24 bg-muted/50 px-6">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16 space-y-2">
-              <h2 className="text-3xl font-bold">Everything you need to run your business</h2>
-              <p className="text-muted-foreground">Powerful features designed for modern salon workflows.</p>
+        {/* Categories Section */}
+        <section className="py-12 px-6 max-w-7xl mx-auto w-full">
+          <h2 className="text-xl font-bold mb-6">Browse by Category</h2>
+          <CategoryCarousel />
+        </section>
+
+        {/* Recommended Section (Static for now) */}
+        <section className="py-12 px-6 max-w-7xl mx-auto w-full bg-muted/30 rounded-3xl mb-12">
+          <div className="flex justify-between items-end mb-8">
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Recommended Near You</h2>
+              <p className="text-muted-foreground">Top rated venues based on your location</p>
             </div>
-            
-            <div className="grid md:grid-cols-3 gap-8">
-              <FeatureCard 
-                icon={<Calendar className="h-8 w-8 text-blue-500" />}
-                title="Smart Booking"
-                description="Drag-and-drop calendar with conflict detection and automated reminders."
-              />
-              <FeatureCard 
-                icon={<Users className="h-8 w-8 text-purple-500" />}
-                title="Customer CRM"
-                description="360° client profiles, history tracking, and loyalty tier management."
-              />
-              <FeatureCard 
-                icon={<Scissors className="h-8 w-8 text-pink-500" />}
-                title="Service Menu"
-                description="Flexible service configuration with categories, add-ons, and variable pricing."
-              />
-            </div>
+            <Button variant="link" className="text-primary font-bold">See all</Button>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="group bg-background rounded-xl overflow-hidden shadow-sm border hover:shadow-md transition-all cursor-pointer">
+                <div className="aspect-[4/3] bg-muted relative">
+                  {/* Placeholder Image */}
+                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground bg-gray-100">
+                    Venue Image
+                  </div>
+                  <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2 py-1 rounded-md text-xs font-bold shadow-sm">
+                    ⭐ 4.9 (120)
+                  </div>
+                </div>
+                <div className="p-4 space-y-2">
+                  <h3 className="font-bold text-lg group-hover:text-primary transition-colors">Luxe Hair Salon</h3>
+                  <p className="text-sm text-muted-foreground">1.2km • District 1, HCMC</p>
+                  <div className="flex gap-2 pt-2">
+                    <span className="text-xs font-medium bg-secondary px-2 py-1 rounded-md">Haircut</span>
+                    <span className="text-xs font-medium bg-secondary px-2 py-1 rounded-md">Color</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="py-12 border-t px-6 bg-background text-sm text-muted-foreground">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
-          <p>© 2024 SalonPro Inc. All rights reserved.</p>
-          <div className="flex gap-6">
-            <Link href="#" className="hover:text-foreground">Terms</Link>
-            <Link href="#" className="hover:text-foreground">Privacy</Link>
-            <Link href="#" className="hover:text-foreground">Contact</Link>
+      <footer className="py-12 border-t px-6 bg-muted/20">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-8 mb-8">
+          <div className="space-y-4">
+            <h4 className="font-bold text-lg">BeautyBook</h4>
+            <p className="text-sm text-muted-foreground">The best way to book beauty and wellness services online.</p>
           </div>
+          <div>
+            <h4 className="font-semibold mb-4">Discover</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li><Link href="#">Near me</Link></li>
+              <li><Link href="#">Top Rated</Link></li>
+              <li><Link href="#">Categories</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-4">Partners</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li><Link href="/dashboard">For Business</Link></li>
+              <li><Link href="#">Pricing</Link></li>
+              <li><Link href="#">Support</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold mb-4">Legal</h4>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              <li><Link href="#">Privacy</Link></li>
+              <li><Link href="#">Terms</Link></li>
+            </ul>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto pt-8 border-t text-center text-sm text-muted-foreground">
+          © 2024 BeautyBook Inc. All rights reserved.
         </div>
       </footer>
     </div>
   );
-}
-
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
-  return (
-    <div className="p-8 rounded-2xl bg-background border shadow-sm hover:shadow-md transition-shadow">
-      <div className="mb-4">{icon}</div>
-      <h3 className="text-xl font-bold mb-2">{title}</h3>
-      <p className="text-muted-foreground">{description}</p>
-    </div>
-  )
 }
