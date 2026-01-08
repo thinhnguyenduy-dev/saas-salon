@@ -41,7 +41,10 @@ export const config = {
           const user = data.data || data; // Unwrap if wrapped in data property
 
           if (res.ok && user) {
-            return user
+            return {
+              ...user,
+              accessToken: user.access_token,
+            }
           }
           console.error("Login failed:", user);
           return null

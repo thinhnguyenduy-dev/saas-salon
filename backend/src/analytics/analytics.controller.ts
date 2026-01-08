@@ -12,6 +12,11 @@ export class AnalyticsController {
     return this.analyticsService.getStats(req.user);
   }
 
+  @Get('dashboard-overview')
+  getDashboardOverview(@Request() req: any) {
+    return this.analyticsService.getDashboardOverview(req.user);
+  }
+
   @Get('revenue')
   getRevenue(@Request() req: any, @Query('days') days: number) {
     return this.analyticsService.getRevenueOverTime(req.user, days || 7);

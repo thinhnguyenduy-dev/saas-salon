@@ -6,12 +6,13 @@ import { Booking } from '../entities/booking.entity';
 import { Staff } from '../entities/staff.entity';
 import { Service } from '../entities/service.entity';
 import { Customer } from '../entities/customer.entity';
+import { User } from '../entities/user.entity';
 import { UsersModule } from '../users/users.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Booking, Staff, Service, Customer]),
+    TypeOrmModule.forFeature([Booking, Staff, Service, Customer, User]),
     UsersModule,
     NotificationsModule,
   ],

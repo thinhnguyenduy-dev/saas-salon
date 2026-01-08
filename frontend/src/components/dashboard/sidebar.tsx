@@ -1,8 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-
 import {
   LayoutDashboard,
   Calendar,
@@ -11,48 +11,41 @@ import {
   Scissors,
   Settings,
   CreditCard,
-  LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useSession, signOut } from 'next-auth/react';
 import { Logo } from "@/components/ui/logo";
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 const routes = [
   {
     label: 'Dashboard',
     icon: LayoutDashboard,
     href: '/dashboard',
-    color: 'text-sky-500',
   },
   {
     label: 'Bookings',
     icon: Calendar,
     href: '/dashboard/bookings',
-    color: 'text-violet-500',
   },
   {
     label: 'Customers',
     icon: Users,
     href: '/dashboard/customers',
-    color: 'text-pink-700',
   },
   {
     label: 'Services',
     icon: Scissors,
     href: '/dashboard/services',
-    color: 'text-orange-700',
   },
   {
     label: 'Staff',
     icon: UserCog,
     href: '/dashboard/staff',
-    color: 'text-teal-500',
   },
   {
     label: 'Billing',
     icon: CreditCard,
     href: '/dashboard/billing',
-    color: 'text-emerald-500',
   },
   {
     label: 'Settings',
@@ -61,46 +54,66 @@ const routes = [
   },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  isMobile?: boolean;
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+function SidebarContent({ isMobile, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const { data: session } = useSession();
+
+  const handleLinkClick = () => {
+    if (isMobile && onClose) {
+      onClose();
+    }
+  };
 
   return (
-    <div className="space-y-4 py-4 flex flex-col h-full bg-background border-r">
+    <div className="space-y-4 py-4 flex flex-col h-full min-h-screen bg-gray-900 text-white">
       <div className="px-3 py-2 flex-1">
-        <Link href="/dashboard" className="flex items-center pl-3 mb-14">
-          <Logo className="h-8 w-auto text-primary" />
+        <Link href="/dashboard" className="flex items-center pl-3 mb-14" onClick={handleLinkClick}>
+          <Logo className="h-8 w-auto text-white" />
         </Link>
         <div className="space-y-1">
           {routes.map((route) => (
             <Link
               key={route.href}
               href={route.href}
-                className={cn(
-                'text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-primary hover:bg-primary/10 rounded-lg transition',
+              onClick={handleLinkClick}
+              className={cn(
+                'text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:bg-gray-800 rounded-lg transition',
                 pathname === route.href
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground',
+                  ? 'bg-gray-800 text-white'
+                  : 'text-gray-400',
               )}
             >
               <div className="flex items-center flex-1">
-                <route.icon className={cn('h-5 w-5 mr-3', route.color)} />
+                <route.icon className={cn('h-5 w-5 mr-3', pathname === route.href ? 'text-white' : 'text-gray-400')} />
                 {route.label}
               </div>
             </Link>
           ))}
         </div>
       </div>
-      <div className="px-3 py-2">
-        <div className="flex items-center p-3 text-sm text-muted-foreground">
-          <div className="flex-1 overflow-hidden text-ellipsis whitespace-nowrap">
-            {session?.user?.email}
-          </div>
-          <button onClick={() => signOut()} className="ml-auto hover:text-red-500">
-             <LogOut className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
     </div>
+  );
+}
+
+export function Sidebar() {
+  return (
+    <div className="hidden md:block">
+      <SidebarContent />
+    </div>
+  );
+}
+
+export function MobileSidebar({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  return (
+    <Sheet open={isOpen} onOpenChange={onClose}>
+      <SheetContent side="left" className="p-0 w-72">
+        <SidebarContent isMobile onClose={onClose} />
+      </SheetContent>
+    </Sheet>
   );
 }

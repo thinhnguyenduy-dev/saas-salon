@@ -52,4 +52,45 @@ export class AnalyticsService {
 
       return result.map(r => ({ date: r.date, revenue: Number(r.revenue) }));
   }
+
+  async getDashboardOverview(user: User) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // Today's revenue (completed bookings)
+      const todayRevenueResult = await this.bookingRepository
+          .createQueryBuilder('booking')
+          .select('SUM(booking.totalPrice)', 'total')
+          .where('booking.shopId = :shopId', { shopId: user.shopId })
+          .andWhere('booking.appointmentDate >= :today', { today })
+          .andWhere('booking.appointmentDate < :tomorrow', { tomorrow })
+          .andWhere('booking.status = :status', { status: BookingStatus.COMPLETED })
+          .getRawOne();
+
+      // Today's bookings count
+      const todayBookingsCount = await this.bookingRepository.count({
+          where: {
+              shopId: user.shopId,
+              appointmentDate: Between(today, tomorrow)
+          }
+      });
+
+      // Occupancy rate (simplified: today's bookings / total possible slots)
+      // For now, assume 10 slots per day as max capacity
+      const maxDailySlots = 10;
+      const occupancyRate = Math.min(100, Math.round((todayBookingsCount / maxDailySlots) * 100));
+
+      // Satisfaction rate (placeholder - would need reviews data)
+      // For now, return a static value or calculate from reviews if available
+      const satisfactionRate = 92; // Placeholder
+
+      return {
+          revenue: Number(todayRevenueResult?.total || 0),
+          occupancyRate,
+          satisfactionRate,
+          totalBookings: todayBookingsCount
+      };
+  }
 }

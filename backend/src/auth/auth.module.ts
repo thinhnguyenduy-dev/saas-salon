@@ -19,13 +19,13 @@ import { MicrosoftStrategy } from './strategies/microsoft.strategy';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get('JWT_SECRET') || 'supersecretkey',
-        signOptions: { expiresIn: '15m' },
+        signOptions: { expiresIn: '7d' },
       }),
       inject: [ConfigService],
     }),
   ],
   providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy, MicrosoftStrategy],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

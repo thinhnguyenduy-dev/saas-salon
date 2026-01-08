@@ -25,4 +25,9 @@ export class UsersService {
   async findOneById(id: string): Promise<User | null> {
     return this.userRepository.findOneBy({ id });
   }
+
+  async findOneByShopId(shopId: string): Promise<User | null> {
+    // Assuming one owner per shop for now, or finding the first user linked to shop with OWNER role
+    return this.userRepository.findOne({ where: { shopId, role: 'OWNER' as any } }); 
+  }
 }

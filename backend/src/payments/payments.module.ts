@@ -3,9 +3,15 @@ import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Shop } from '../entities/shop.entity';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Shop])],
+  imports: [
+    TypeOrmModule.forFeature([Shop]),
+    NotificationsModule,
+    UsersModule,
+  ],
   controllers: [PaymentsController],
   providers: [PaymentsService],
   exports: [PaymentsService],

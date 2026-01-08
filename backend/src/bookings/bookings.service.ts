@@ -89,6 +89,8 @@ export class BookingsService {
     const savedBooking = await this.bookingRepository.save(booking);
     
     // Notifications
+    
+    // 1. Notify Customer (Email)
     if (customer.email) {
         this.notificationsService.sendBookingConfirmation(customer.email, {
             bookingId: savedBooking.id,
@@ -98,6 +100,20 @@ export class BookingsService {
             shopName: 'Our Shop' // Should fetch shop
         });
     }
+
+    // 2. Notify Shop Owner (Dashboard Notification)
+    // Find shop owner
+    const shopOwner = await this.usersService.findOneByShopId(shopId);
+    if (shopOwner) {
+        await this.notificationsService.createAndSend(
+            shopOwner.id,
+            'New Public Booking',
+            `New booking from ${customer.fullName} for ${appointmentDate} at ${startTime}`,
+            'success' as any
+        );
+    }
+    
+    // Stray code removed
 
     return savedBooking;
   }
@@ -142,7 +158,17 @@ export class BookingsService {
       status: BookingStatus.CONFIRMED,
     });
 
-    return this.bookingRepository.save(booking);
+    const savedBooking = await this.bookingRepository.save(booking);
+
+    // Notify Shop Owner (Confirmation)
+    await this.notificationsService.createAndSend(
+        user.id,
+        'Booking Created',
+        `You created a booking for ${customerId} on ${appointmentDate}`,
+        'info' as any
+    );
+
+    return savedBooking;
   }
 
   async checkStaffAvailability(staffId: string, date: string, startTime: string, endTime: string): Promise<boolean> {
@@ -249,6 +275,14 @@ export class BookingsService {
              shopName: 'My Shop'
         });
     }
+
+    // Notify Shop Owner
+    await this.notificationsService.createAndSend(
+        user.id,
+        'Booking Cancelled',
+        `Booking for ${booking.customer?.fullName || 'Customer'} on ${booking.appointmentDate} has been cancelled.`,
+        'warning' as any
+    );
 
     return { message: 'Booking cancelled' };
   }
