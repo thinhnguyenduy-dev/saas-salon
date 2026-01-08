@@ -40,14 +40,22 @@ async function seed() {
     // 1. Create Main Shop
     const shopRepo = dataSource.getRepository(Shop);
     console.log('Creating Main Shop...');
+    
+    // Helper function for standard business hours
+    const getStandardBusinessHours = () => [
+      { day: 'monday', isOpen: true, openTime: '09:00', closeTime: '18:00', breaks: [{ start: '12:00', end: '13:00' }] },
+      { day: 'tuesday', isOpen: true, openTime: '09:00', closeTime: '18:00', breaks: [{ start: '12:00', end: '13:00' }] },
+      { day: 'wednesday', isOpen: true, openTime: '09:00', closeTime: '18:00', breaks: [{ start: '12:00', end: '13:00' }] },
+      { day: 'thursday', isOpen: true, openTime: '09:00', closeTime: '18:00', breaks: [{ start: '12:00', end: '13:00' }] },
+      { day: 'friday', isOpen: true, openTime: '09:00', closeTime: '18:00', breaks: [{ start: '12:00', end: '13:00' }] },
+      { day: 'saturday', isOpen: true, openTime: '10:00', closeTime: '17:00', breaks: [] },
+      { day: 'sunday', isOpen: false, openTime: null, closeTime: null, breaks: [] },
+    ];
+    
     const shop = shopRepo.create({
       name: 'Beautiful Salon',
       slug: 'beautiful-salon',
-      businessHours: [{
-        day: 'Monday-Sunday',
-        open: '08:00',
-        close: '22:00',
-      }],
+      businessHours: getStandardBusinessHours(),
       isActive: true,
       street: '123 Main St',
       city: 'Metropolis',
@@ -360,15 +368,156 @@ async function seed() {
       await bookingRepo.save(booking);
     }
 
+    // 8. Create 20 Additional Shops
+    console.log('Creating 20 Additional Shops...');
+    const additionalShops = [
+      { name: 'Glamour Studio', slug: 'glamour-studio', city: 'Downtown', district: 'Fashion District', street: '456 Style Ave', image: '/images/shops/glamour-studio.png' },
+      { name: 'Serenity Spa', slug: 'serenity-spa', city: 'Riverside', district: 'Wellness Quarter', street: '789 Calm Road', image: '/images/shops/serenity-spa.png' },
+      { name: 'Elite Hair Lounge', slug: 'elite-hair-lounge', city: 'Uptown', district: 'Luxury Lane', street: '101 Prestige Blvd', image: '/images/shops/elite-hair-lounge.png' },
+      { name: 'Radiant Beauty Bar', slug: 'radiant-beauty-bar', city: 'Midtown', district: 'Beauty Plaza', street: '202 Glow Street', image: '/images/shops/radiant-beauty-bar.png' },
+      { name: 'Zen Wellness Center', slug: 'zen-wellness-center', city: 'Eastside', district: 'Tranquil Zone', street: '303 Peace Avenue', image: '/images/shops/zen-wellness-center.png' },
+      { name: 'Luxe Nail Boutique', slug: 'luxe-nail-boutique', city: 'Westend', district: 'Chic Corner', street: '404 Polish Lane', image: '/images/shops/luxe-nail-boutique.png' },
+      { name: 'Blissful Retreat', slug: 'blissful-retreat', city: 'Northgate', district: 'Relaxation Row', street: '505 Harmony Way', image: '/images/shops/serenity-spa.png' },
+      { name: 'Modern Cuts Salon', slug: 'modern-cuts-salon', city: 'Southside', district: 'Trendy District', street: '606 Edge Street', image: '/images/shops/modern-cuts-salon.png' },
+      { name: 'Velvet Touch Spa', slug: 'velvet-touch-spa', city: 'Central Park', district: 'Spa District', street: '707 Soft Avenue', image: '/images/shops/velvet-touch-spa.png' },
+      { name: 'Crown Beauty Palace', slug: 'crown-beauty-palace', city: 'Royal Heights', district: 'Elite Quarter', street: '808 Regal Road', image: '/images/shops/radiant-beauty-bar.png' },
+      { name: 'Fresh Face Studio', slug: 'fresh-face-studio', city: 'Green Valley', district: 'Natural Zone', street: '909 Pure Lane', image: '/images/shops/fresh-face-studio.png' },
+      { name: 'Silk & Shine', slug: 'silk-and-shine', city: 'Pearl Bay', district: 'Coastal Area', street: '1010 Smooth Street', image: '/images/shops/glamour-studio.png' },
+      { name: 'Urban Glow Lounge', slug: 'urban-glow-lounge', city: 'Metro Center', district: 'City Core', street: '1111 Bright Blvd', image: '/images/shops/urban-glow-lounge.png' },
+      { name: 'Tranquil Oasis', slug: 'tranquil-oasis', city: 'Desert Springs', district: 'Calm District', street: '1212 Serene Way', image: '/images/shops/zen-wellness-center.png' },
+      { name: 'Chic Boutique Salon', slug: 'chic-boutique-salon', city: 'Fashion Valley', district: 'Style Street', street: '1313 Vogue Avenue', image: '/images/shops/elite-hair-lounge.png' },
+      { name: 'Paradise Spa Resort', slug: 'paradise-spa-resort', city: 'Tropical Bay', district: 'Resort Area', street: '1414 Island Road', image: '/images/shops/velvet-touch-spa.png' },
+      { name: 'Platinum Hair Studio', slug: 'platinum-hair-studio', city: 'Silver Lake', district: 'Premium Zone', street: '1515 Shine Lane', image: '/images/shops/modern-cuts-salon.png' },
+      { name: 'Blossom Beauty Haven', slug: 'blossom-beauty-haven', city: 'Garden City', district: 'Floral District', street: '1616 Petal Street', image: '/images/shops/fresh-face-studio.png' },
+      { name: 'Infinity Wellness', slug: 'infinity-wellness', city: 'Horizon Hills', district: 'Health Quarter', street: '1717 Forever Avenue', image: '/images/shops/zen-wellness-center.png' },
+      { name: 'Prestige Beauty Lounge', slug: 'prestige-beauty-lounge', city: 'Diamond District', district: 'Luxury Zone', street: '1818 Class Boulevard', image: '/images/shops/luxe-nail-boutique.png' },
+    ];
+
+    let shopCounter = 2;
+    for (const shopData of additionalShops) {
+      const newShop = shopRepo.create({
+        name: shopData.name,
+        slug: shopData.slug,
+        businessHours: getStandardBusinessHours(),
+        isActive: true,
+        street: shopData.street,
+        city: shopData.city,
+        district: shopData.district,
+        image: shopData.image
+      });
+      await shopRepo.save(newShop);
+
+      // Create owner for each shop
+      const shopOwner = userRepo.create({
+        fullName: `${shopData.name} Owner`,
+        email: `owner${shopCounter}@${shopData.slug}.com`,
+        password: hashedPassword,
+        shop: newShop,
+        shopId: newShop.id,
+        role: UserRole.OWNER,
+        isActive: true,
+      });
+      await userRepo.save(shopOwner);
+
+      // Create basic categories for each shop
+      const shopCategories = [];
+      const hairCat = categoryRepo.create({
+        name: 'Hair Services',
+        shopId: newShop.id,
+        description: 'Professional hair care'
+      });
+      await categoryRepo.save(hairCat);
+      shopCategories.push(hairCat);
+
+      const nailCat = categoryRepo.create({
+        name: 'Nail Services',
+        shopId: newShop.id,
+        description: 'Manicure and pedicure'
+      });
+      await categoryRepo.save(nailCat);
+      shopCategories.push(nailCat);
+
+      // Create basic services
+      const basicServices = [
+        { name: 'Haircut', price: 35.00, duration: 30, categoryId: hairCat.id },
+        { name: 'Hair Coloring', price: 85.00, duration: 90, categoryId: hairCat.id },
+        { name: 'Manicure', price: 25.00, duration: 30, categoryId: nailCat.id },
+        { name: 'Pedicure', price: 35.00, duration: 45, categoryId: nailCat.id },
+      ];
+
+      for (const svcData of basicServices) {
+        const svc = serviceRepo.create({
+          ...svcData,
+          shopId: newShop.id,
+          isActive: true
+        });
+        await serviceRepo.save(svc);
+      }
+
+      // Create 2 staff members per shop
+      const staffData = [
+        {
+          fullName: `Staff Member ${shopCounter}A`,
+          email: `staff${shopCounter}a@${shopData.slug}.com`,
+          phone: `+1-555-${2000 + shopCounter}`,
+          skills: ['Haircut', 'Styling'],
+          baseSalary: 2500,
+          commissionRate: 15,
+        },
+        {
+          fullName: `Staff Member ${shopCounter}B`,
+          email: `staff${shopCounter}b@${shopData.slug}.com`,
+          phone: `+1-555-${3000 + shopCounter}`,
+          skills: ['Manicure', 'Pedicure'],
+          baseSalary: 2300,
+          commissionRate: 12,
+        },
+      ];
+
+      for (const staffMember of staffData) {
+        const staff = staffRepo.create({
+          ...staffMember,
+          shopId: newShop.id,
+          isActive: true,
+          workSchedule: [
+            { dayOfWeek: 1, startTime: '09:00', endTime: '17:00' },
+            { dayOfWeek: 2, startTime: '09:00', endTime: '17:00' },
+            { dayOfWeek: 3, startTime: '09:00', endTime: '17:00' },
+            { dayOfWeek: 4, startTime: '09:00', endTime: '17:00' },
+            { dayOfWeek: 5, startTime: '09:00', endTime: '17:00' },
+          ]
+        });
+        await staffRepo.save(staff);
+      }
+
+      // Create 3 customers per shop
+      for (let i = 1; i <= 3; i++) {
+        const customer = customerRepo.create({
+          fullName: `Customer ${shopCounter}-${i}`,
+          email: `customer${shopCounter}-${i}@example.com`,
+          phone: `+1-555-${4000 + shopCounter * 10 + i}`,
+          shopId: newShop.id,
+        });
+        await customerRepo.save(customer);
+      }
+
+      shopCounter++;
+    }
+
     console.log('\n✅ Seeding completed successfully!');
     console.log('\n📊 Summary:');
-    console.log(`   - Shop: Beautiful Salon`);
-    console.log(`   - Owner: admin@example.com / password123`);
-    console.log(`   - Staff Members: ${createdStaff.length}`);
-    console.log(`   - Customers: ${createdCustomers.length}`);
-    console.log(`   - Services: ${createdServices.length}`);
-    console.log(`   - Bookings: ${bookingsData.length}`);
-    console.log('\n🗓️  Bookings created for:');
+    console.log(`   - Total Shops: 21 (1 main + 20 additional)`);
+    console.log(`   - Main Shop: Beautiful Salon`);
+    console.log(`   - Main Owner: admin@example.com / password123`);
+    console.log(`   - Staff Members (main shop): ${createdStaff.length}`);
+    console.log(`   - Customers (main shop): ${createdCustomers.length}`);
+    console.log(`   - Services (main shop): ${createdServices.length}`);
+    console.log(`   - Bookings (main shop): ${bookingsData.length}`);
+    console.log('\n🏪 Additional Shops:');
+    console.log(`   - Each shop has: 2 staff, 3 customers, 4 services`);
+    console.log(`   - Login format: owner2@glamour-studio.com, owner3@serenity-spa.com, etc.`);
+    console.log(`   - Password for all: password123`);
+    console.log('\n🗓️  Bookings created for main shop:');
     console.log(`   - Past: 3 bookings (completed/cancelled/no-show)`);
     console.log(`   - Today: 4 bookings`);
     console.log(`   - This week: 17 bookings`);

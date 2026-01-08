@@ -66,6 +66,39 @@ export function FilterBar() {
         </DropdownMenuContent>
       </DropdownMenu>
 
+      {/* City Filter */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant={searchParams.get('city') ? 'secondary' : 'outline'} size="sm" className="rounded-full h-9">
+            City {searchParams.get('city') ? `: ${searchParams.get('city')}` : ''} <ChevronDown className="w-3 h-3 ml-2 opacity-50" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={() => updateParam('city', null)}>All Cities</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => updateParam('city', 'Downtown')}>Downtown</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => updateParam('city', 'Riverside')}>Riverside</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => updateParam('city', 'Uptown')}>Uptown</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => updateParam('city', 'Midtown')}>Midtown</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => updateParam('city', 'Metropolis')}>Metropolis</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* District Filter */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant={searchParams.get('district') ? 'secondary' : 'outline'} size="sm" className="rounded-full h-9">
+            District {searchParams.get('district') ? `: ${searchParams.get('district')}` : ''} <ChevronDown className="w-3 h-3 ml-2 opacity-50" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem onClick={() => updateParam('district', null)}>All Districts</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => updateParam('district', 'Fashion District')}>Fashion District</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => updateParam('district', 'Central District')}>Central District</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => updateParam('district', 'Wellness Quarter')}>Wellness Quarter</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => updateParam('district', 'Beauty Plaza')}>Beauty Plaza</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
       <Button variant="outline" size="sm" className="rounded-full h-9">
         Gender <ChevronDown className="w-3 h-3 ml-2 opacity-50" />
       </Button>

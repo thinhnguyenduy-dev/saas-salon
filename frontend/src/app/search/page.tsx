@@ -1,9 +1,11 @@
 import { FilterBar } from "@/components/marketplace/filter-bar";
 import { ShopCard } from "@/components/marketplace/shop-card";
 import { MapView } from "@/components/marketplace/map-view";
+import { SearchInput } from "@/components/marketplace/search-input";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { fetchShops } from "@/lib/api-shops";
+import { getCityCoordinates } from "@/lib/city-coordinates";
 
 export default async function SearchPage({
   searchParams,
@@ -48,7 +50,15 @@ export default async function SearchPage({
       reviewCount: shop.reviewCount || 0,
       address: `${shop.street}, ${shop.district}, ${shop.city}`,
       category: "Full Service", // We need to update backend to return categories or main category
+      city: shop.city,
+      district: shop.district,
+      street: shop.street,
   }));
+
+  // Parse user location from URL params
+  const userLocation = (lat && lng && typeof lat === 'string' && typeof lng === 'string')
+    ? { lat: parseFloat(lat), lng: parseFloat(lng) }
+    : null;
 
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground">
@@ -59,7 +69,7 @@ export default async function SearchPage({
         </Link>
         <div className="flex-1 max-w-2xl hidden md:block">
             <div className="scale-90 origin-left">
-                <div className="flex items-center border rounded-full px-4 py-2 bg-muted/30 text-sm text-muted-foreground w-full cursor-pointer hover:bg-muted/50 transition">
+                <div className="flex items-center border rounded-full px-4 py-2 bg-muted/30 text-sm text-muted-foreground w-full">
                     <span className="font-medium text-foreground">{typeof search === 'string' ? search : 'Any Treatment'}</span>
                     <span className="mx-2">•</span>
                     <span>Current Location</span>
@@ -76,12 +86,13 @@ export default async function SearchPage({
         </div>
       </header>
 
-      {/* Main Content: Split View */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Main Content with Sidebar and Map */}
+      <div className="flex flex-1 overflow-hidden">
         {/* Left: List View */}
         <div className="w-full lg:w-[60%] xl:w-[55%] flex flex-col h-full border-r overflow-hidden relative z-10 bg-background shadow-xl lg:shadow-none">
             {/* Filters */}
             <div className="px-6 py-4 border-b shrink-0">
+                <SearchInput initialSearch={typeof search === 'string' ? search : ''} />
                 <FilterBar />
                 <div className="mt-4 flex items-center justify-between">
                     <h1 className="font-bold text-lg">{shopsData.totalDocs} results found {typeof search === 'string' && `for "${search}"`}</h1>
@@ -107,7 +118,7 @@ export default async function SearchPage({
 
         {/* Right: Map View (Hidden on mobile for now, or toggled) */}
         <div className="hidden lg:block flex-1 bg-slate-100 relative h-full">
-            <MapView />
+            <MapView shops={shops} userLocation={userLocation} />
         </div>
       </div>
       

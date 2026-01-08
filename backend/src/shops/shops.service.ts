@@ -1,9 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Shop } from '../entities/shop.entity';
 import { Service } from '../entities/service.entity';
 import { Staff } from '../entities/staff.entity';
+import { UpdateBusinessHoursDto } from './dto/business-hours.dto';
+import { 
+  validateBusinessHours, 
+  isShopOpenNow, 
+  getNextOpening as getNextOpeningUtil,
+  getTodayHours 
+} from '../common/utils/business-hours.utils';
 
 @Injectable()
 export class ShopsService {
@@ -14,7 +21,7 @@ export class ShopsService {
   ) {}
 
   async findAllPublic(query: any) {
-    const { page = 1, limit = 10, search, lat, lng, maxDistance = 5000 } = query;
+    const { page = 1, limit = 10, search, lat, lng, maxDistance = 5000, city, district } = query;
     
     const qb = this.shopRepository.createQueryBuilder('shop');
     qb.select(['shop.id', 'shop.name', 'shop.slug', 'shop.street', 'shop.city', 'shop.district', 'shop.ward', 'shop.location', 'shop.businessHours', 'shop.subscriptionPlan', 'shop.image']);
@@ -22,6 +29,16 @@ export class ShopsService {
 
     if (search) {
         qb.andWhere('shop.name ILIKE :search', { search: `%${search}%` });
+    }
+
+    // Filter by city
+    if (city) {
+        qb.andWhere('shop.city ILIKE :city', { city: `%${city}%` });
+    }
+
+    // Filter by district
+    if (district) {
+        qb.andWhere('shop.district ILIKE :district', { district: `%${district}%` });
     }
 
     if (lat && lng) {
@@ -148,5 +165,106 @@ export class ShopsService {
     }
     Object.assign(shop, attrs);
     return this.shopRepository.save(shop);
+  }
+
+  // Business Hours Methods
+
+  async getBusinessHours(shopId: string) {
+    const shop = await this.shopRepository.findOne({ 
+      where: { id: shopId },
+      select: ['id', 'name', 'businessHours']
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Shop not found');
+    }
+
+    return {
+      shopId: shop.id,
+      shopName: shop.name,
+      businessHours: shop.businessHours || [],
+    };
+  }
+
+  async updateBusinessHours(shopId: string, dto: UpdateBusinessHoursDto) {
+    const shop = await this.shopRepository.findOneBy({ id: shopId });
+    
+    if (!shop) {
+      throw new NotFoundException('Shop not found');
+    }
+
+    // Validate business hours
+    const errors = validateBusinessHours(dto.businessHours);
+    if (errors.length > 0) {
+      throw new BadRequestException({
+        message: 'Invalid business hours',
+        errors,
+      });
+    }
+
+    shop.businessHours = dto.businessHours;
+    await this.shopRepository.save(shop);
+
+    return {
+      success: true,
+      message: 'Business hours updated successfully',
+      businessHours: shop.businessHours,
+    };
+  }
+
+  async isShopOpen(shopId: string) {
+    const shop = await this.shopRepository.findOne({
+      where: { id: shopId },
+      select: ['id', 'name', 'businessHours']
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Shop not found');
+    }
+
+    if (!shop.businessHours || shop.businessHours.length === 0) {
+      return {
+        shopId: shop.id,
+        isOpen: false,
+        reason: 'No business hours set',
+      };
+    }
+
+    const isOpen = isShopOpenNow(shop.businessHours);
+    const todayHours = getTodayHours(shop.businessHours);
+
+    return {
+      shopId: shop.id,
+      shopName: shop.name,
+      isOpen,
+      todayHours,
+    };
+  }
+
+  async getNextOpening(shopId: string) {
+    const shop = await this.shopRepository.findOne({
+      where: { id: shopId },
+      select: ['id', 'name', 'businessHours']
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Shop not found');
+    }
+
+    if (!shop.businessHours || shop.businessHours.length === 0) {
+      return {
+        shopId: shop.id,
+        nextOpening: null,
+        message: 'No business hours set',
+      };
+    }
+
+    const nextOpening = getNextOpeningUtil(shop.businessHours);
+
+    return {
+      shopId: shop.id,
+      shopName: shop.name,
+      nextOpening,
+    };
   }
 }

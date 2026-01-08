@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Sidebar, MobileSidebar } from '@/components/dashboard/sidebar';
 import { DashboardHeader } from '@/components/dashboard/header';
+import { Toaster } from '@/components/ui/toaster';
 
 export default function DashboardLayout({
   children,
@@ -31,6 +32,8 @@ export default function DashboardLayout({
           {children}
         </div>
       </main>
+      
+      <Toaster />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { SearchBar } from "@/components/marketplace/search-bar";
+import { HeroSearch } from "@/components/home/hero-search";
 import { Logo } from "@/components/ui/logo";
 import { CategoryCarousel } from "@/components/marketplace/category-carousel";
 import { RecommendedSection } from "@/components/marketplace/recommended-section";
@@ -52,7 +52,7 @@ export default function Home() {
             </p>
             
             <div className="pt-8 w-full flex justify-center">
-              <SearchBar />
+              <HeroSearch />
             </div>
 
             <p className="pt-8 text-sm font-medium text-white/90 drop-shadow-sm">

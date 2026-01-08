@@ -1,8 +1,9 @@
-import { Controller, Get, Param, Query, Patch, Body, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Param, Query, Patch, Body, UseGuards, Request, ForbiddenException, Put, BadRequestException } from '@nestjs/common';
 import { ShopsService } from './shops.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { UpdateShopDto } from './dto/update-shop.dto';
+import { UpdateBusinessHoursDto } from './dto/business-hours.dto';
 
 @ApiTags('Shops (Marketplace)')
 @Controller('shops')
@@ -14,7 +15,12 @@ export class ShopsController {
   @ApiQuery({ name: 'lat', required: false, type: Number })
   @ApiQuery({ name: 'lng', required: false, type: Number })
   @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'city', required: false, type: String })
+  @ApiQuery({ name: 'district', required: false, type: String })
+  @ApiQuery({ name: 'category', required: false, type: String })
   @ApiQuery({ name: 'maxDistance', required: false, type: Number, description: 'Meters' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   findAll(@Query() query: any) {
     return this.shopsService.findAllPublic(query);
   }
@@ -45,5 +51,37 @@ export class ShopsController {
           throw new ForbiddenException('User is not associated with any shop');
       }
       return this.shopsService.update(req.user.shopId, body);
+  }
+
+  // Business Hours Endpoints
+
+  @Get(':id/business-hours')
+  @ApiOperation({ summary: 'Get business hours for a shop' })
+  getBusinessHours(@Param('id') id: string) {
+    return this.shopsService.getBusinessHours(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Put('my-shop/business-hours')
+  @ApiOperation({ summary: 'Update business hours for your shop (Owner/Admin)' })
+  @ApiBody({ type: UpdateBusinessHoursDto })
+  updateBusinessHours(@Request() req: any, @Body() body: UpdateBusinessHoursDto) {
+    if (!req.user.shopId) {
+      throw new ForbiddenException('User is not associated with any shop');
+    }
+    return this.shopsService.updateBusinessHours(req.user.shopId, body);
+  }
+
+  @Get(':id/is-open')
+  @ApiOperation({ summary: 'Check if shop is currently open' })
+  isShopOpen(@Param('id') id: string) {
+    return this.shopsService.isShopOpen(id);
+  }
+
+  @Get(':id/next-opening')
+  @ApiOperation({ summary: 'Get next opening time for a shop' })
+  getNextOpening(@Param('id') id: string) {
+    return this.shopsService.getNextOpening(id);
   }
 }

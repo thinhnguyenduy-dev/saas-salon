@@ -1,102 +1,67 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import apiClient from "@/lib/api-client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { toast } from "sonner"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import Link from 'next/link'
+import { Clock, User, Bell, Shield } from 'lucide-react'
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
-export default function DashboardSettingsPage() {
-  const [loading, setLoading] = useState(true)
-  const [shop, setShop] = useState<any>(null)
-  const [name, setName] = useState("")
-  const [slug, setSlug] = useState("")
-  const [street, setStreet] = useState("")
-  const [city, setCity] = useState("")
+const settingsPages = [
+  {
+    title: 'Business Hours',
+    description: 'Set your weekly schedule and break times',
+    icon: Clock,
+    href: '/dashboard/settings/business-hours',
+  },
+  {
+    title: 'Profile',
+    description: 'Manage your shop profile and information',
+    icon: User,
+    href: '/dashboard/settings/profile',
+  },
+  {
+    title: 'Notifications',
+    description: 'Configure notification preferences',
+    icon: Bell,
+    href: '/dashboard/settings/notifications',
+  },
+  {
+    title: 'Security',
+    description: 'Password and security settings',
+    icon: Shield,
+    href: '/dashboard/settings/security',
+  },
+]
 
-  useEffect(() => {
-    fetchMyShop()
-  }, [])
-
-  const fetchMyShop = async () => {
-      try {
-           // We need an endpoint to get "my shop". 
-           // Currently we don't have GET /shops/my-shop explicitly, but we can reuse GET /auth/profile or similar if it returns shop data.
-           // OR use the public slug if we know it. 
-           // Better pattern: Implementing GET /shops/my-shop would be cleaner, but for now let's assume valid session has shopId.
-           // Wait, I implemented PATCH /shops/my-shop, but not GET /shops/my-shop.
-           // Ideally we need GET /shops/my-shop to populate the form.
-           // Workaround: Use the Session to get ShopId (if available) or rely on a new endpoint.
-           // Since I can't easily change backend right now without more context, let's assume we can fetch via slug if user provides it, OR add GET /shops/my-shop quickly?
-           // Actually, let's add GET /shops/my-shop to backend quickly. It's symmetrical.
-           
-           const res = await apiClient.get('/shops/my-shop'); // Will fail if I don't add it
-           setShop(res.data)
-           setName(res.data.name)
-           setSlug(res.data.slug)
-           setStreet(res.data.street)
-           setCity(res.data.city)
-      } catch (error) {
-          console.error("Failed to fetch shop", error)
-      } finally {
-          setLoading(false)
-      }
-  }
-
-  const onSubmit = async (e: React.FormEvent) => {
-      e.preventDefault();
-      try {
-          await apiClient.patch('/shops/my-shop', {
-              name,
-              slug,
-              street,
-              city
-          });
-          toast.success("Shop updated successfully")
-      } catch (error) {
-          console.error(error);
-          toast.error("Failed to update shop")
-      }
-  }
-
-  if (loading) return <div>Loading...</div>
-
+export default function SettingsPage() {
   return (
-    <div className="flex-1 space-y-4 p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Settings</h1>
+        <p className="text-muted-foreground mt-2">
+          Manage your shop settings and preferences
+        </p>
       </div>
 
-      <Card>
-          <CardHeader>
-              <CardTitle>Shop Profile</CardTitle>
-              <CardDescription>Manage your shop 's public information.</CardDescription>
-          </CardHeader>
-          <CardContent>
-              <form onSubmit={onSubmit} className="space-y-4">
-                  <div className="grid gap-2">
-                      <Label htmlFor="name">Shop Name</Label>
-                      <Input id="name" value={name} onChange={e => setName(e.target.value)} />
+      <div className="grid gap-4 md:grid-cols-2">
+        {settingsPages.map((page) => (
+          <Link key={page.href} href={page.href}>
+            <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
+              <CardHeader>
+                <div className="flex items-start gap-4">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <page.icon className="w-6 h-6 text-primary" />
                   </div>
-                   <div className="grid gap-2">
-                      <Label htmlFor="slug">Slug (URL)</Label>
-                      <Input id="slug" value={slug} onChange={e => setSlug(e.target.value)} />
+                  <div className="flex-1">
+                    <CardTitle className="text-lg">{page.title}</CardTitle>
+                    <CardDescription className="mt-1.5">
+                      {page.description}
+                    </CardDescription>
                   </div>
-                   <div className="grid gap-2">
-                      <Label htmlFor="street">Street Address</Label>
-                      <Input id="street" value={street} onChange={e => setStreet(e.target.value)} />
-                  </div>
-                   <div className="grid gap-2">
-                      <Label htmlFor="city">City</Label>
-                      <Input id="city" value={city} onChange={e => setCity(e.target.value)} />
-                  </div>
-                  <Button type="submit">Save Changes</Button>
-              </form>
-          </CardContent>
-      </Card>
+                </div>
+              </CardHeader>
+            </Card>
+          </Link>
+        ))}
+      </div>
     </div>
   )
 }
