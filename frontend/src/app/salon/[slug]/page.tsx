@@ -1,7 +1,6 @@
 import { fetchShopBySlug } from "@/lib/api-shops";
 import { ServiceList, ServiceCategory } from "@/components/marketplace/service-list";
-import { ReviewList } from "@/components/marketplace/reviews/ReviewList";
-import { ReviewForm } from "@/components/marketplace/reviews/ReviewForm";
+import { ShopReviews } from "@/components/marketplace/reviews/ShopReviews";
 import { Button } from "@/components/ui/button";
 import { Star, MapPin, Clock, Share2, Heart, ChevronLeft } from "lucide-react";
 import Link from "next/link";
@@ -122,17 +121,9 @@ export default async function SalonDetailPage({ params }: { params: Promise<{ sl
                  </p>
              </section>
 
-             {/* Reviews Section */}
+              {/* Reviews Section */}
              <section id="reviews" className="pt-8 border-t">
-                 <div className="flex justify-between items-center mb-6">
-                     <h2 className="text-2xl font-bold">Reviews</h2>
-                     {/* In real app, only show if user can review (e.g. valid booking) */}
-                 </div>
-                 
-                 <div className="grid gap-8">
-                     <ReviewForm shopId={shop.id} />
-                     <ReviewList shopId={shop.id} />
-                 </div>
+                 <ShopReviews shopId={shop.id} />
              </section>
         </div>
 

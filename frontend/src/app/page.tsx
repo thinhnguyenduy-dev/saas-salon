@@ -63,7 +63,7 @@ export default function Home() {
 
         {/* Categories Section */}
         <section className="py-12 px-6 max-w-7xl mx-auto w-full">
-          <h2 className="text-2xl font-bold mb-6 text-gray-900">Recently viewed</h2>
+          <h2 className="text-2xl font-bold mb-6 text-gray-900">Browse by Category</h2>
           <CategoryCarousel />
         </section>
 

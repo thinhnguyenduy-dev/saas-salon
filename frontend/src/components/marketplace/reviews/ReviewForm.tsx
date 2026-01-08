@@ -3,52 +3,93 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Star } from "lucide-react"
+import { StarRating } from "@/components/ui/star-rating"
+import { useToast } from "@/hooks/use-toast"
 import apiClient from "@/lib/api-client"
 
 export function ReviewForm({ shopId, onSubmitted }: { shopId: string, onSubmitted?: () => void }) {
     const [rating, setRating] = useState(0);
     const [comment, setComment] = useState("");
     const [submitting, setSubmitting] = useState(false);
+    const { toast } = useToast();
 
     const handleSubmit = async () => {
-        if (rating === 0) return;
+        if (rating === 0) {
+            toast({
+                title: "Rating required",
+                description: "Please select a star rating",
+                variant: "destructive"
+            });
+            return;
+        }
+        
         setSubmitting(true);
         try {
             await apiClient.post('/reviews', {
                 shopId,
                 rating,
                 comment,
-                customerId: null, // Anonymous for now, or link if logged in
             });
+            
             setRating(0);
             setComment("");
+            toast({
+                title: "Review submitted",
+                description: "Thank you for your feedback!",
+            });
+            
             if (onSubmitted) onSubmitted();
-        } catch (e) {
+        } catch (e: any) {
             console.error(e);
+            
+            const isUnauthorized = e.response?.status === 401;
+            
+            toast({
+                title: isUnauthorized ? "Login required" : "Submission failed",
+                description: isUnauthorized 
+                    ? "You must be logged in to post a review." 
+                    : "Please try again later.",
+                variant: "destructive",
+                action: isUnauthorized ? (
+                    <Button variant="outline" size="sm" onClick={() => window.location.href = '/login'}>
+                        Login
+                    </Button>
+                ) : undefined
+            });
         } finally {
             setSubmitting(false);
         }
     }
 
     return (
-        <div className="space-y-4 border p-4 rounded-lg bg-muted/20">
-            <h3 className="font-bold">Write a Review</h3>
-            <div className="flex gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                    <button key={i} onClick={() => setRating(i + 1)} type="button">
-                        <Star className={`h-6 w-6 ${i < rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
-                    </button>
-                ))}
+        <div className="space-y-4 border p-6 rounded-xl bg-muted/30">
+            <div className="space-y-1">
+                <h3 className="font-bold text-lg">Write a Review</h3>
+                <p className="text-sm text-muted-foreground">Share your experience with others</p>
             </div>
+            
+            <div className="py-2">
+                <StarRating 
+                    rating={rating} 
+                    interactive={true} 
+                    onRatingChange={setRating} 
+                    size={28}
+                    className="gap-2"
+                />
+            </div>
+            
             <Textarea 
-                placeholder="Share your experience..." 
+                placeholder="Tell us about your experience..." 
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
+                className="min-h-[100px] bg-white"
             />
-            <Button onClick={handleSubmit} disabled={submitting || rating === 0}>
-                {submitting ? "Submitting..." : "Post Review"}
-            </Button>
+            
+            <div className="flex justify-end">
+                <Button onClick={handleSubmit} disabled={submitting || rating === 0}>
+                    {submitting ? "Submitting..." : "Post Review"}
+                </Button>
+            </div>
         </div>
     )
 }

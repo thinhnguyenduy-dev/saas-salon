@@ -2,66 +2,69 @@
 
 import { useEffect, useState } from "react"
 import apiClient from "@/lib/api-client"
-import { Star, User } from "lucide-react"
-import { Card, CardContent } from "@/components/ui/card"
-import { format } from "date-fns"
-
-interface Review {
-    id: string;
-    rating: number;
-    comment: string;
-    createdAt: string;
-    customer?: {
-        fullName: string;
-    }
-}
+import { ReviewCard, Review } from "@/components/reviews/review-card"
+import { Button } from "@/components/ui/button"
 
 export function ReviewList({ shopId }: { shopId: string }) {
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
+
+    const fetchReviews = async (pageNum: number, append = false) => {
+        try {
+            setLoading(true);
+            const res = await apiClient.get(`/reviews/shop/${shopId}?page=${pageNum}&limit=5`);
+            const responseData = res.data;
+            const data = responseData.data || responseData; // Handle potential wrapper or direct response
+            
+            if (append) {
+                setReviews(prev => [...prev, ...data.reviews]);
+            } else {
+                setReviews(data.reviews || []);
+            }
+            
+            setHasMore((data.reviews || []).length === 5); // Simple check for now
+        } catch (err) {
+            console.error("Failed to fetch reviews", err);
+            setReviews([]);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
         if(!shopId) return;
-        apiClient.get(`/reviews/shop/${shopId}`)
-            .then(res => {
-                const reviewsData = res.data.data || [];
-                setReviews(Array.isArray(reviewsData) ? reviewsData : []);
-            })
-            .catch(err => console.error("Failed to fetch reviews", err))
-            .finally(() => setLoading(false));
+        fetchReviews(1);
     }, [shopId]);
 
-    if (loading) return <div className="text-sm text-muted-foreground">Loading reviews...</div>;
+    const loadMore = () => {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchReviews(nextPage, true);
+    };
+
+    if (loading && reviews.length === 0) return <div className="text-sm text-muted-foreground p-4">Loading reviews...</div>;
 
     if (reviews.length === 0) {
-        return <div className="text-sm text-muted-foreground italic">No reviews yet.</div>;
+        return <div className="text-sm text-muted-foreground italic p-4">No reviews yet. Be the first to review!</div>;
     }
 
     return (
-        <div className="space-y-4">
-             {reviews.map(review => (
-                 <Card key={review.id}>
-                     <CardContent className="p-4 space-y-2">
-                         <div className="flex justify-between items-start">
-                             <div className="flex items-center gap-2">
-                                 <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                                     <User className="h-4 w-4" />
-                                 </div>
-                                 <div>
-                                     <p className="font-bold text-sm">{review.customer?.fullName || 'Guest'}</p>
-                                     <p className="text-xs text-muted-foreground">{format(new Date(review.createdAt), "MMM d, yyyy")}</p>
-                                 </div>
-                             </div>
-                             <div className="flex">
-                                 {Array.from({ length: 5 }).map((_, i) => (
-                                     <Star key={i} className={`h-4 w-4 ${i < review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} />
-                                 ))}
-                             </div>
-                         </div>
-                         <p className="text-sm mt-2">{review.comment}</p>
-                     </CardContent>
-                 </Card>
-             ))}
+        <div className="space-y-6">
+             <div className="space-y-4">
+                 {reviews.map(review => (
+                     <ReviewCard key={review.id} review={review} />
+                 ))}
+             </div>
+             
+             {hasMore && (
+                 <div className="flex justify-center pt-2">
+                     <Button variant="outline" onClick={loadMore} disabled={loading}>
+                         {loading ? "Loading..." : "Load More Reviews"}
+                     </Button>
+                 </div>
+             )}
         </div>
     )
 }

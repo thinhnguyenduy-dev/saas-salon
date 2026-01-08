@@ -8,6 +8,8 @@ import { Service } from '../entities/service.entity';
 import { Staff } from '../entities/staff.entity';
 import { Customer } from '../entities/customer.entity';
 import { Booking, BookingStatus } from '../entities/booking.entity';
+import { Review } from '../entities/review.entity';
+import { faker } from '@faker-js/faker';
 
 async function seed() {
   const dataSource = new DataSource({
@@ -24,7 +26,8 @@ async function seed() {
       Service,
       Staff,
       Customer,
-      Booking
+      Booking,
+      Review
     ],
     synchronize: true,
   });
@@ -295,6 +298,8 @@ async function seed() {
       return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
     };
 
+    const createdBookings = [];
+
     // Create bookings for this week and next week
     const bookingsData = [
       // Today
@@ -366,7 +371,45 @@ async function seed() {
       });
       
       await bookingRepo.save(booking);
+      createdBookings.push(booking);
     }
+    
+    // Create Reviews
+    console.log('Creating Reviews...');
+    const reviewRepository = dataSource.getRepository(Review);
+    const reviews = [];
+    
+    // Add reviews for the main shop
+    const mainShopBookings = createdBookings.filter(b => b.shopId === shop.id);
+    const completedMainShopBookings = mainShopBookings.filter(b => b.status === BookingStatus.COMPLETED);
+    
+    for (const booking of completedMainShopBookings) {
+      if (Math.random() > 0.3) {
+        const rating = Math.floor(Math.random() * 2) + 4; // 4 or 5 stars
+        const review = reviewRepository.create({
+          shopId: shop.id,
+          customerId: booking.customerId,
+          serviceId: booking.services[0]?.id,
+          bookingId: booking.id,
+          rating: rating,
+          comment: rating === 5 
+            ? 'Amazing service! I will definitely come back soon.' 
+            : 'Great experience, very professional staff.',
+          isVerified: true,
+          createdAt: new Date(booking.startTime), 
+        });
+        
+        if (Math.random() > 0.5) {
+          review.response = 'Thank you so much for your kind words! We look forward to seeing you again.';
+          review.responseDate = new Date(review.createdAt.getTime() + 24 * 60 * 60 * 1000); // 1 day later
+        }
+        
+        reviews.push(review);
+      }
+    }
+
+    await reviewRepository.save(reviews);
+    console.log(`Created ${reviews.length} reviews for main shop`);
 
     // 8. Create 20 Additional Shops
     console.log('Creating 20 Additional Shops...');
