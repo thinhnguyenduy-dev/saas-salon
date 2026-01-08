@@ -8,7 +8,7 @@ export interface WorkShift {
 }
 
 export interface Staff {
-  _id: string;
+  id: string;
   fullName: string;
   email?: string;
   phone?: string;

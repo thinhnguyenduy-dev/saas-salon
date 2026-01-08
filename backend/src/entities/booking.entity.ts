@@ -53,7 +53,7 @@ export class Booking {
   @JoinTable({ name: 'booking_services' })
   services: Service[];
 
-  @Column()
+  @Column({ type: 'timestamptz', nullable: true })
   appointmentDate: Date; // Keep as date/timestamp
 
   @Column()
@@ -88,10 +88,10 @@ export class Booking {
   @Column({ nullable: true })
   notes: string;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ type: 'timestamptz' })
   updatedAt: Date;
 
   @BeforeInsert()

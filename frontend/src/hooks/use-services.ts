@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import apiClient from '@/lib/api-client';
 
 export interface Service {
-  _id: string;
+  id: string;
   name: string;
   duration: number;
   price: number;

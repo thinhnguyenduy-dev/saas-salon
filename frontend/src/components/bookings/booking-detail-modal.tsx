@@ -157,7 +157,7 @@ export function BookingDetailModal({ booking, open, onOpenChange }: BookingDetai
                             </p>
                           </div>
                           <p className="font-semibold">
-                            ${service.price.toFixed(2)}
+                            ${Number(service.price || 0).toFixed(2)}
                           </p>
                         </div>
                         {index < booking.services.length - 1 && (
@@ -249,7 +249,7 @@ export function BookingDetailModal({ booking, open, onOpenChange }: BookingDetai
                     <div>
                       <p className="text-sm text-muted-foreground">Total Amount</p>
                       <p className="text-2xl font-bold">
-                        ${booking.totalPrice.toFixed(2)}
+                        ${Number(booking.totalPrice || 0).toFixed(2)}
                       </p>
                     </div>
                     <div className="text-right">

@@ -62,7 +62,7 @@ export function CustomerForm({ initialData, onSuccess }: CustomerFormProps) {
       };
 
       if (initialData) {
-        await updateCustomer.mutateAsync({ id: initialData._id, data: formattedData })
+        await updateCustomer.mutateAsync({ id: initialData.id, data: formattedData })
         toast.success("Customer updated successfully")
       } else {
         await createCustomer.mutateAsync(formattedData)

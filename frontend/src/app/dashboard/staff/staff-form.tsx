@@ -96,7 +96,7 @@ export function StaffForm({ initialData, onSuccess }: StaffFormProps) {
       }
 
       if (initialData) {
-        await updateStaff.mutateAsync({ id: initialData._id, data: payload })
+        await updateStaff.mutateAsync({ id: initialData.id, data: payload })
         toast.success("Staff updated successfully")
       } else {
         await createStaff.mutateAsync(payload)

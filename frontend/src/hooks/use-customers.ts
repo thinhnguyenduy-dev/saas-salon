@@ -9,7 +9,7 @@ export enum MembershipTier {
 }
 
 export interface Customer {
-  _id: string;
+  id: string;
   fullName: string;
   phone: string;
   email?: string;

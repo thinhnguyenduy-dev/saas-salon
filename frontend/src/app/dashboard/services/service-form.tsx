@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { useCreateService, useUpdateService } from "@/hooks/use-services"
+import { useCategories } from "@/hooks/use-categories"
 import { toast } from "sonner"
 import { DialogFooter } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -45,6 +46,7 @@ interface ServiceFormProps {
 export function ServiceForm({ initialData, onSuccess }: ServiceFormProps) {
   const createService = useCreateService()
   const updateService = useUpdateService()
+  const { data: categories } = useCategories()
 
   const form = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceSchema) as any,
@@ -61,7 +63,7 @@ export function ServiceForm({ initialData, onSuccess }: ServiceFormProps) {
   async function onSubmit(data: ServiceFormValues) {
     try {
       if (initialData) {
-        await updateService.mutateAsync({ id: initialData._id, data })
+        await updateService.mutateAsync({ id: initialData.id, data })
         toast.success("Service updated successfully")
       } else {
         await createService.mutateAsync(data)
@@ -130,8 +132,11 @@ export function ServiceForm({ initialData, onSuccess }: ServiceFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="default">General</SelectItem>
-                  {/* Map categories here */}
+                  {categories?.docs?.map((category: any) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               <FormMessage />

@@ -97,7 +97,7 @@ export const columns: ColumnDef<Service>[] = [
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(service._id)}
+              onClick={() => navigator.clipboard.writeText(service.id)}
             >
               Copy service ID
             </DropdownMenuItem>

@@ -60,12 +60,12 @@ export function StaffFilter({ staff, selectedStaffIds, onSelectionChange }: Staf
 
       {/* Individual Staff */}
       {staff.map((member) => {
-        const isSelected = isAllSelected || selectedStaffIds.includes(member._id);
+        const isSelected = isAllSelected || selectedStaffIds.includes(member.id);
         
         return (
           <button
-            key={member._id}
-            onClick={() => toggleStaff(member._id)}
+            key={member.id}
+            onClick={() => toggleStaff(member.id)}
             className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-full border transition-all shrink-0",
               isSelected

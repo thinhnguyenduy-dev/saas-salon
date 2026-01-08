@@ -1,7 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import apiClient from "@/lib/api-client"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Table,
@@ -18,151 +17,66 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-  DialogFooter,
 } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import { useServices, useDeleteService, Service } from "@/hooks/use-services"
+import { ServiceForm } from "./service-form"
+import { Badge } from "@/components/ui/badge"
 
 export default function DashboardServicesPage() {
-  const [services, setServices] = useState<any[]>([])
-  const [categories, setCategories] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const { data, isLoading } = useServices(page, 10)
+  const deleteService = useDeleteService()
+  
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    price: 0,
-    duration: 30, // Default 30 min
-    categoryId: ""
-  })
+  const [editingService, setEditingService] = useState<Service | null>(null)
 
-  useEffect(() => {
-    fetchServices()
-    fetchCategories()
-  }, [])
-
-  const fetchCategories = async () => {
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to delete this service?")) {
       try {
-          const res = await apiClient.get('/categories');
-          const data = res.data.docs || res.data;
-          setCategories(Array.isArray(data) ? data : []);
+        await deleteService.mutateAsync(id)
+        toast.success("Service deleted successfully")
       } catch (error) {
-          console.error("Failed to fetch categories", error);
-          setCategories([]);
+        toast.error("Failed to delete service")
       }
-  }
-
-  const fetchServices = async () => {
-    try {
-      const res = await apiClient.get("/services")
-      const data = res.data.docs || res.data;
-      setServices(Array.isArray(data) ? data : [])
-    } catch (error) {
-      console.error("Failed to fetch services", error)
-    } finally {
-        setLoading(false)
     }
   }
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    try {
-      await apiClient.post("/services", formData)
-      toast.success("Service created")
-      setDialogOpen(false)
-      fetchServices()
-      setFormData({ name: "", description: "", price: 0, duration: 30, categoryId: "" })
-    } catch (error) {
-       console.error(error)
-       toast.error("Failed to create service")
-    }
+  const handleEdit = (service: Service) => {
+    setEditingService(service)
+    setDialogOpen(true)
   }
+
+  const handleAddNew = () => {
+    setEditingService(null)
+    setDialogOpen(true)
+  }
+
+  const onFormSuccess = () => {
+    setDialogOpen(false)
+    setEditingService(null) // Reset editing state
+  }
+
+  const services = data?.docs || []
 
   return (
     <div className="flex-1 space-y-4 p-8 pt-6">
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Services Management</h2>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <Dialog open={dialogOpen} onOpenChange={(open) => {
+            setDialogOpen(open)
+            if (!open) setEditingService(null)
+        }}>
             <DialogTrigger asChild>
-                <Button>
+                <Button onClick={handleAddNew}>
                     <Plus className="mr-2 h-4 w-4" /> Add Service
                 </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Add New Service</DialogTitle>
+                    <DialogTitle>{editingService ? "Edit Service" : "Add New Service"}</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleCreate} className="space-y-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="name">Service Name</Label>
-                        <Input 
-                            id="name" 
-                            value={formData.name} 
-                            onChange={(e) => setFormData({...formData, name: e.target.value})} 
-                            required
-                        />
-                    </div>
-                    <div className="grid gap-2">
-                        <Label htmlFor="category">Category</Label>
-                        <Select onValueChange={(value) => setFormData({...formData, categoryId: value})} required>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {categories.map((category) => (
-                                    <SelectItem key={category.id} value={category.id}>
-                                        {category.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                     <div className="grid gap-2">
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea 
-                            id="description" 
-                            value={formData.description} 
-                            onChange={(e) => setFormData({...formData, description: e.target.value})} 
-                        />
-                    </div>
-                    <div className="grid gap-4 grid-cols-2">
-                         <div className="grid gap-2">
-                            <Label htmlFor="price">Price ($)</Label>
-                            <Input 
-                                id="price" 
-                                type="number"
-                                min="0"
-                                value={formData.price} 
-                                onChange={(e) => setFormData({...formData, price: Number(e.target.value)})} 
-                                required
-                            />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="duration">Duration (min)</Label>
-                            <Input 
-                                id="duration" 
-                                type="number"
-                                min="5"
-                                step="5"
-                                value={formData.duration} 
-                                onChange={(e) => setFormData({...formData, duration: Number(e.target.value)})} 
-                                required
-                            />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button type="submit">Create Service</Button>
-                    </DialogFooter>
-                </form>
+                <ServiceForm initialData={editingService} onSuccess={onFormSuccess} />
             </DialogContent>
         </Dialog>
       </div>
@@ -175,28 +89,38 @@ export default function DashboardServicesPage() {
               <TableHead>Description</TableHead>
               <TableHead>Price</TableHead>
               <TableHead>Duration (min)</TableHead>
+              <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {loading ? (
+            {isLoading ? (
                 <TableRow>
-                    <TableCell colSpan={5} className="text-center h-24">Loading...</TableCell>
+                    <TableCell colSpan={6} className="text-center h-24">Loading...</TableCell>
                 </TableRow>
             ) : services.length === 0 ? (
                 <TableRow>
-                    <TableCell colSpan={5} className="text-center h-24">No services found.</TableCell>
+                    <TableCell colSpan={6} className="text-center h-24">No services found.</TableCell>
                 </TableRow>
             ) : (
-                services.map((service) => (
+                services.map((service: any) => (
                     <TableRow key={service.id}>
                         <TableCell className="font-medium">{service.name}</TableCell>
                         <TableCell>{service.description}</TableCell>
                         <TableCell>${service.price}</TableCell>
                         <TableCell>{service.duration}</TableCell>
+                        <TableCell>
+                            <Badge variant={service.isActive ? "default" : "secondary"}>
+                                {service.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                        </TableCell>
                         <TableCell className="text-right">
-                            <Button variant="ghost" size="sm"><Pencil className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="sm" className="text-destructive"><Trash className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="sm" onClick={() => handleEdit(service)}>
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleDelete(service.id)}>
+                                <Trash className="h-4 w-4" />
+                            </Button>
                         </TableCell>
                     </TableRow>
                 ))
@@ -204,6 +128,8 @@ export default function DashboardServicesPage() {
           </TableBody>
         </Table>
       </div>
+      
+       {/* Simple pagination controls if needed, relying on default for now */}
     </div>
   )
 }

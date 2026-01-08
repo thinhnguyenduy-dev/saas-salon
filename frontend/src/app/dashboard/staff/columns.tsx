@@ -123,7 +123,7 @@ export const createColumns = ({ onEdit, onDelete }: ColumnsProps): ColumnDef<Sta
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>Actions</DropdownMenuLabel>
             <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(staff._id)}
+              onClick={() => navigator.clipboard.writeText(staff.id)}
             >
               Copy ID
             </DropdownMenuItem>

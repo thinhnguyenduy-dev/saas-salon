@@ -1,4 +1,4 @@
-import { IsBoolean, IsMongoId, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsBoolean, IsUUID, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateServiceDto {
@@ -23,7 +23,7 @@ export class CreateServiceDto {
   description?: string;
 
   @ApiProperty({ example: '60d...', description: 'Service Category ID' })
-  @IsMongoId()
+  @IsUUID()
   @IsNotEmpty()
   categoryId: string;
 
