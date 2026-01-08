@@ -1,7 +1,8 @@
 import { Controller, Get, Param, Query, Patch, Body, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { ShopsService } from './shops.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { UpdateShopDto } from './dto/update-shop.dto';
 
 @ApiTags('Shops (Marketplace)')
 @Controller('shops')
@@ -38,7 +39,8 @@ export class ShopsController {
   @ApiBearerAuth()
   @Patch('my-shop')
   @ApiOperation({ summary: 'Update your shop profile (Owner/Admin)' })
-  updateMyShop(@Request() req: any, @Body() body: any) {
+  @ApiBody({ type: UpdateShopDto })
+  updateMyShop(@Request() req: any, @Body() body: UpdateShopDto) {
       if (!req.user.shopId) {
           throw new ForbiddenException('User is not associated with any shop');
       }
