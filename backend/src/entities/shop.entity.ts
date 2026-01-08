@@ -48,6 +48,15 @@ export class Shop {
   @Column({ enum: ['FREE', 'BASIC', 'PRO', 'ENTERPRISE'], default: 'FREE' })
   subscriptionPlan: string;
 
+  @Column({ nullable: true })
+  stripeCustomerId: string;
+
+  @Column({ nullable: true })
+  stripeSubscriptionId: string;
+
+  @Column({ default: 'active' })
+  subscriptionStatus: string;
+
   @Column({ default: true })
   isActive: boolean;
 

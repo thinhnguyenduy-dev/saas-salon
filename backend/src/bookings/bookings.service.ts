@@ -256,75 +256,100 @@ export class BookingsService {
 
 
   async getAvailableSlots(query: any) {
-    const { shopId, serviceIds, staffId, date } = query;
-    const services = Array.isArray(serviceIds) ? serviceIds : [serviceIds];
-    
-    // 1. Get total duration
-    const serviceEntities = await this.serviceRepository.findBy({ id: In(services) });
-    const totalDuration = serviceEntities.reduce((acc, s) => acc + s.duration, 0);
-
-    // 2. Determine Staff
-    let staffList: Staff[] = [];
-    if (staffId) {
-        const staff = await this.staffRepository.findOneBy({ id: staffId });
-        if (staff) staffList.push(staff);
-    } else {
-        staffList = await this.staffRepository.findBy({ shopId, isActive: true });
-    }
-
-    if (staffList.length === 0) return [];
-
-    const targetDate = new Date(date);
-    const dayOfWeek = targetDate.getDay();
-
-    const allSlots = new Set<string>();
-
-    for (const staff of staffList) {
-        const shift = (staff.workSchedule as any[]).find((s: any) => s.dayOfWeek === dayOfWeek);
-        if (!shift) continue;
-
-        const qb = this.bookingRepository.createQueryBuilder('booking');
-        qb.where('booking.staffId = :staffId', { staffId: staff.id });
-        qb.andWhere('booking.appointmentDate = :date', { date });
-        qb.andWhere('booking.status NOT IN (:...statuses)', { statuses: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW] });
-
-        const bookings = await qb.getMany();
-
-        const [startH, startM] = shift.startTime.split(':').map(Number);
-        const [endH, endM] = shift.endTime.split(':').map(Number);
+    try {
+        const { shopId, serviceIds, staffId, date } = query;
+        // console.log("getAvailableSlots query:", query);
         
-        let currentH = startH;
-        let currentM = startM;
+        let services: string[] = [];
+        if (Array.isArray(serviceIds)) {
+            services = serviceIds;
+        } else if (typeof serviceIds === 'string') {
+            services = serviceIds.split(',').map(s => s.trim()).filter(Boolean);
+        }
 
-        while (currentH < endH || (currentH === endH && currentM < endM)) {
-            const timeString = `${currentH.toString().padStart(2, '0')}:${currentM.toString().padStart(2, '0')}`;
+        if (services.length === 0) return [];
+        
+        // 1. Get total duration
+        const serviceEntities = await this.serviceRepository.findBy({ id: In(services) });
+        const totalDuration = serviceEntities.reduce((acc, s) => acc + s.duration, 0);
+
+        // 2. Determine Staff
+        let staffList: Staff[] = [];
+        if (staffId) {
+            const staff = await this.staffRepository.findOneBy({ id: staffId });
+            if (staff) staffList.push(staff);
+        } else {
+            staffList = await this.staffRepository.findBy({ shopId, isActive: true });
+        }
+
+        if (staffList.length === 0) return [];
+
+        const targetDate = new Date(date);
+        const dayOfWeek = targetDate.getDay();
+
+        const allSlots = new Set<string>();
+
+        for (const staff of staffList) {
+            const schedule = Array.isArray(staff.workSchedule) ? staff.workSchedule : [];
+            const shift = schedule.find((s: any) => s.dayOfWeek === dayOfWeek);
             
-            const slotStartMins = currentH * 60 + currentM;
-            const slotEndMins = slotStartMins + totalDuration;
-            const shiftEndMins = endH * 60 + endM;
+            if (!shift || !shift.startTime || !shift.endTime) continue;
 
-            if (slotEndMins <= shiftEndMins) {
-                const slotEndTimeString = `${Math.floor(slotEndMins / 60).toString().padStart(2, '0')}:${(slotEndMins % 60).toString().padStart(2, '0')}`;
+            // FIX: Use date logic consistent with DB
+            // We need to fetch bookings for that day.
+            // Since appointmentDate is timestamptz, we should range query for the whole day.
+            const startOfDay = new Date(date);
+            startOfDay.setHours(0,0,0,0);
+            const endOfDay = new Date(date);
+            endOfDay.setHours(23,59,59,999);
+
+            const qb = this.bookingRepository.createQueryBuilder('booking');
+            qb.where('booking.staffId = :staffId', { staffId: staff.id });
+            // Fix: Use range for date comparison to handle timestamptz correctly
+            qb.andWhere('booking.appointmentDate >= :startOfDay AND booking.appointmentDate <= :endOfDay', { startOfDay, endOfDay });
+            qb.andWhere('booking.status NOT IN (:...statuses)', { statuses: [BookingStatus.CANCELLED, BookingStatus.NO_SHOW] });
+
+            const bookings = await qb.getMany();
+
+            const [startH, startM] = shift.startTime.split(':').map(Number);
+            const [endH, endM] = shift.endTime.split(':').map(Number);
+            
+            let currentH = startH;
+            let currentM = startM;
+
+            while (currentH < endH || (currentH === endH && currentM < endM)) {
+                const timeString = `${currentH.toString().padStart(2, '0')}:${currentM.toString().padStart(2, '0')}`;
                 
-                const isConflict = bookings.some(b => {
-                    const bStart = b.startTime;
-                    const bEnd = b.endTime;
-                    return (timeString < bEnd && slotEndTimeString > bStart);
-                });
+                const slotStartMins = currentH * 60 + currentM;
+                const slotEndMins = slotStartMins + totalDuration;
+                const shiftEndMins = endH * 60 + endM;
 
-                if (!isConflict) {
-                    allSlots.add(timeString);
+                if (slotEndMins <= shiftEndMins) {
+                    const slotEndTimeString = `${Math.floor(slotEndMins / 60).toString().padStart(2, '0')}:${(slotEndMins % 60).toString().padStart(2, '0')}`;
+                    
+                    const isConflict = bookings.some(b => {
+                        const bStart = b.startTime;
+                        const bEnd = b.endTime;
+                        return (timeString < bEnd && slotEndTimeString > bStart);
+                    });
+
+                    if (!isConflict) {
+                        allSlots.add(timeString);
+                    }
+                }
+
+                currentM += 30;
+                if (currentM >= 60) {
+                    currentH++;
+                    currentM -= 60;
                 }
             }
-
-            currentM += 30;
-            if (currentM >= 60) {
-                currentH++;
-                currentM -= 60;
-            }
         }
-    }
 
-    return Array.from(allSlots).sort();
-  }
+        return Array.from(allSlots).sort();
+    } catch (error) {
+        console.error("Error in getAvailableSlots:", error);
+        throw new BadRequestException("Failed to fetch slots");
+    }
+}
 }

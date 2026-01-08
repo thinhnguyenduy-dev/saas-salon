@@ -23,7 +23,10 @@ export function ReviewList({ shopId }: { shopId: string }) {
     useEffect(() => {
         if(!shopId) return;
         apiClient.get(`/reviews/shop/${shopId}`)
-            .then(res => setReviews(res.data))
+            .then(res => {
+                const reviewsData = res.data.data || [];
+                setReviews(Array.isArray(reviewsData) ? reviewsData : []);
+            })
             .catch(err => console.error("Failed to fetch reviews", err))
             .finally(() => setLoading(false));
     }, [shopId]);

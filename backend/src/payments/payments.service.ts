@@ -1,87 +1,113 @@
-import { Injectable, InternalServerErrorException, Logger, BadRequestException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, InternalServerErrorException, BadRequestException } from '@nestjs/common';
+import Stripe from 'stripe';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import Stripe from 'stripe';
-import { Booking, PaymentStatus, BookingStatus } from '../entities/booking.entity';
+import { Shop } from '../entities/shop.entity';
 
 @Injectable()
 export class PaymentsService {
   private stripe: Stripe;
-  private readonly logger = new Logger(PaymentsService.name);
 
   constructor(
-    private configService: ConfigService,
-    @InjectRepository(Booking) private bookingRepository: Repository<Booking>,
+      @InjectRepository(Shop) private shopRepository: Repository<Shop>
   ) {
-    const apiKey = this.configService.get<string>('STRIPE_SECRET_KEY');
-    if (!apiKey) {
-      this.logger.warn('STRIPE_SECRET_KEY is not defined');
-    }
-
-    this.stripe = new Stripe(apiKey || 'sk_test_placeholder', {
-      // @ts-ignore
-      apiVersion: '2024-12-18.acacia',
-      typescript: true,
+    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+      apiVersion: '2025-12-15.clover' as any,
     });
   }
 
-  async createPaymentIntent(amount: number, currency: string = 'usd', metadata?: any) {
+  // ... createPaymentIntent logs ...
+
+  async createPaymentIntent(amount: number, currency: string, metadata: any) {
     try {
       const paymentIntent = await this.stripe.paymentIntents.create({
-        amount: Math.round(amount * 100), // Convert to cents
+        amount: Math.round(amount * 100), 
         currency,
         metadata,
         automatic_payment_methods: {
           enabled: true,
         },
       });
-      return paymentIntent;
+
+      return {
+        client_secret: paymentIntent.client_secret,
+        id: paymentIntent.id
+      };
     } catch (error) {
-      this.logger.error('Stripe Error:', error);
+      console.error('Error creating payment intent:', error);
       throw new InternalServerErrorException('Failed to create payment intent');
     }
   }
 
   async handleWebhook(signature: string, payload: Buffer) {
-    const webhookSecret = this.configService.get('STRIPE_WEBHOOK_SECRET');
-    let event: Stripe.Event;
+      const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      console.log('Webhook received. Signature present:', !!signature, 'Secret present:', !!endpointSecret);
+      let event;
 
-    try {
-      event = this.stripe.webhooks.constructEvent(payload, signature, webhookSecret);
-    } catch (err) {
-      this.logger.error(`Webhook Error: ${err.message}`);
-      throw new BadRequestException(`Webhook Error: ${err.message}`);
-    }
+      try {
+          if (endpointSecret) {
+               event = this.stripe.webhooks.constructEvent(payload, signature, endpointSecret);
+          } else {
+               event = JSON.parse(payload.toString());
+               console.warn('Webhook signature verification skipped (No Secret)');
+          }
+      } catch (err: any) {
+          console.error(`Webhook Error: ${err.message}`);
+          throw new BadRequestException(`Webhook Error: ${err.message}`);
+      }
+      
+      console.log('Webhook Event Type:', event.type);
 
-    if (event.type === 'payment_intent.succeeded') {
-      const paymentIntent = event.data.object as Stripe.PaymentIntent;
-      await this.handlePaymentSuccess(paymentIntent);
-    }
+      switch (event.type) {
+          case 'checkout.session.completed':
+              const session = event.data.object;
+              console.log('Processing checkout.session.completed. Mode:', session.mode, 'Metadata:', session.metadata);
+              if (session.mode === 'subscription' && session.metadata?.shopId) {
+                  await this.handleSubscriptionCheckout(session);
+              } else {
+                  console.log('Skipping subscription update: Not subscription mode or missing shopId');
+              }
+              break;
+          case 'customer.subscription.updated':
+          case 'customer.subscription.deleted':
+              const subscription = event.data.object;
+              await this.handleSubscriptionUpdate(subscription);
+              break;
+      }
 
-    return { received: true };
+      return { received: true };
   }
 
-  private async handlePaymentSuccess(paymentIntent: Stripe.PaymentIntent) {
-     const { bookingId } = paymentIntent.metadata;
-     
-     if (!bookingId) {
-         this.logger.warn(`Missing bookingId in paymentIntent metadata: ${paymentIntent.id}`);
-         return;
-     }
+  private async handleSubscriptionCheckout(session: any) {
+      const shopId = session.metadata.shopId;
+      const customerId = session.customer as string;
+      const subscriptionId = session.subscription as string;
 
-     const booking = await this.bookingRepository.findOneBy({ id: bookingId });
-     if (!booking) {
-         this.logger.error(`Booking not found for payment: ${bookingId}`);
-         return;
-     }
+      console.log(`Updating Shop ${shopId} to PRO. Customer: ${customerId}, Sub: ${subscriptionId}`);
 
-     booking.paymentStatus = PaymentStatus.PAID;
-     booking.stripePaymentIntentId = paymentIntent.id;
-     // Optionally confirm the booking if it was pending payment
-     // booking.status = BookingStatus.CONFIRMED; 
+      await this.shopRepository.update(
+          { id: shopId },
+          { 
+              stripeCustomerId: customerId,
+              stripeSubscriptionId: subscriptionId,
+              subscriptionPlan: 'PRO', 
+              subscriptionStatus: 'active'
+          }
+      );
+      console.log(`Shop ${shopId} updated successfully.`);
+  }
 
-     await this.bookingRepository.save(booking);
-     this.logger.log(`Booking ${bookingId} payment successful. Status updated.`);
+  private async handleSubscriptionUpdate(subscription: any) {
+      // Find shop by stripeSubscriptionId
+      const shop = await this.shopRepository.findOneBy({ stripeSubscriptionId: subscription.id });
+      if (shop) {
+          shop.subscriptionStatus = subscription.status;
+          if (subscription.status !== 'active' && subscription.status !== 'trialing') {
+              // Downgrade if inactive? Or keep PRO until end of period?
+              // For safety, let's keep it PRO but mark status.
+              // Logic can be refined later.
+          }
+          await this.shopRepository.save(shop);
+      }
   }
 }

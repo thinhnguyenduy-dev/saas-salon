@@ -21,6 +21,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { BillingModule } from './billing/billing.module';
 
 @Module({
   imports: [
@@ -89,6 +90,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     NotificationsModule,
     ReviewsModule,
     AnalyticsModule,
+    BillingModule,
   ],
   controllers: [AppController],
   providers: [AppService],
