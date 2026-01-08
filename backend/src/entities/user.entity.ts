@@ -22,8 +22,14 @@ export class User {
   @Column()
   fullName: string;
 
-  @Column({ select: false })
+  @Column({ select: false, nullable: true })
   password: string;
+
+  @Column({ nullable: true })
+  googleId: string;
+
+  @Column({ nullable: true })
+  microsoftId: string;
 
   @Column({ nullable: true })
   phone: string;

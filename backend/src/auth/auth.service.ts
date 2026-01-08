@@ -64,4 +64,31 @@ export class AuthService {
     // Implement Redis blacklist logic here
     return { success: true };
   }
+
+  async validateOAuthUser(profile: any, provider: 'google' | 'microsoft') {
+    const { email, firstName, lastName, googleId, microsoftId, picture } = profile;
+    
+    // Find user by email
+    let user = await this.usersService.findOneByEmail(email);
+
+    if (user) {
+      if (provider === 'google' && !user.googleId) {
+        // user.googleId = googleId; 
+        // Sync if needed
+      }
+      return user;
+    }
+
+    // Create new user
+    const newUser = await this.usersService.create({
+      email,
+      password: '', // Password is now nullable in DB but likely required in DTO/Service type. Handled by generic 'any' or service logic
+      fullName: `${firstName} ${lastName}`,
+      role: UserRole.CUSTOMER, // Default to CUSTOMER for public OAuth registration
+      googleId: provider === 'google' ? googleId : undefined,
+      microsoftId: provider === 'microsoft' ? microsoftId : undefined,
+    });
+
+    return newUser;
+  }
 }
