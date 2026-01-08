@@ -12,11 +12,9 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
-    console.log(`[AuthService] Validating user: ${email}`);
     const user = await this.usersService.findOneByEmail(email);
     
     if (!user) {
-      console.log('[AuthService] User not found during validation');
       return null;
     }
 
@@ -35,7 +33,7 @@ export class AuthService {
   }
 
   async login(user: any) {
-    const payload = { email: user.email, sub: user.id, role: user.role };
+    const payload = { email: user.email, sub: user.id, role: user.role, shopId: user.shopId };
     return {
       ...payload, // Return basic user info (email, id, role)
       ...user, // Return other user fields if needed (e.g. fullName) - excluding password which is already handled
@@ -55,7 +53,7 @@ export class AuthService {
   }
 
   async refreshToken(user: any) {
-    const payload = { email: user.email, sub: user.userId || user.sub, role: user.role };
+    const payload = { email: user.email, sub: user.userId || user.sub, role: user.role, shopId: user.shopId };
     return {
       access_token: this.jwtService.sign(payload),
       refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),

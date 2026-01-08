@@ -1,6 +1,7 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query, Patch, Body, UseGuards, Request, ForbiddenException } from '@nestjs/common';
 import { ShopsService } from './shops.service';
-import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiTags, ApiOperation, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 
 @ApiTags('Shops (Marketplace)')
 @Controller('shops')
@@ -21,5 +22,26 @@ export class ShopsController {
   @ApiOperation({ summary: 'Get public shop profile by slug' })
   findOnePublic(@Param('slug') slug: string) {
     return this.shopsService.findOnePublic(slug);
+  }
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get('my-shop')
+  @ApiOperation({ summary: 'Get your shop profile (Owner/Admin)' })
+  getMyShop(@Request() req: any) {
+      if (!req.user.shopId) {
+          throw new ForbiddenException('User is not associated with any shop');
+      }
+      return this.shopsService.findOneById(req.user.shopId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Patch('my-shop')
+  @ApiOperation({ summary: 'Update your shop profile (Owner/Admin)' })
+  updateMyShop(@Request() req: any, @Body() body: any) {
+      if (!req.user.shopId) {
+          throw new ForbiddenException('User is not associated with any shop');
+      }
+      return this.shopsService.update(req.user.shopId, body);
   }
 }

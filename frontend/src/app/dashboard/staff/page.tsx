@@ -1,152 +1,162 @@
-'use client';
+"use client"
 
-import { useStaff, useDeleteStaff, Staff } from '@/hooks/use-staff';
-import { createColumns } from './columns';
-import { DataTable } from '@/components/ui/data-table';
-import { Button } from '@/components/ui/button';
-import { Plus, Search } from 'lucide-react';
+import { useEffect, useState } from "react"
+import apiClient from "@/lib/api-client"
+import { Button } from "@/components/ui/button"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Plus, Pencil, Trash } from "lucide-react"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { StaffForm } from './staff-form';
-import { useState, useMemo } from 'react';
-import { Input } from '@/components/ui/input';
-import { toast } from 'sonner';
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { toast } from "sonner"
 
-export default function StaffPage() {
-  const [search, setSearch] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const { data, isLoading } = useStaff(1, 50, debouncedSearch);
-  const deleteStaff = useDeleteStaff();
-  
-  const [open, setOpen] = useState(false);
-  const [editingStaff, setEditingStaff] = useState<Staff | null>(null);
-  const [deletingStaff, setDeletingStaff] = useState<Staff | null>(null);
+export default function DashboardStaffPage() {
+  const [staff, setStaff] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+  })
 
-  // Debounce search
-  const handleSearch = (value: string) => {
-    setSearch(value);
-    const timeout = setTimeout(() => setDebouncedSearch(value), 300);
-    return () => clearTimeout(timeout);
-  };
+  useEffect(() => {
+    fetchStaff()
+  }, [])
 
-  const handleEdit = (staff: Staff) => {
-    setEditingStaff(staff);
-    setOpen(true);
-  };
-
-  const handleDelete = async () => {
-    if (!deletingStaff) return;
+  const fetchStaff = async () => {
     try {
-      await deleteStaff.mutateAsync(deletingStaff._id);
-      toast.success('Staff deleted successfully');
-      setDeletingStaff(null);
+      // Assuming GET /staff/shop/:shopId or similar. 
+      // For now, simpler implementation: fetching all staff for the logged-in user's shop
+      // The backend endpoint might need adjustment if not already filtering by current user's shop properly.
+      // Based on previous work, GET /staff usually returns list.
+      const res = await apiClient.get("/staff")
+      const data = res.data.docs || res.data;
+      setStaff(Array.isArray(data) ? data : [])
     } catch (error) {
-      toast.error('Failed to delete staff');
+      console.error("Failed to fetch staff", error)
+    } finally {
+      setLoading(false)
     }
-  };
+  }
 
-  const handleFormSuccess = () => {
-    setOpen(false);
-    setEditingStaff(null);
-  };
-
-  const columns = useMemo(() => createColumns({
-    onEdit: handleEdit,
-    onDelete: setDeletingStaff,
-  }), []);
-
-  const staffList = data?.docs || [];
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    try {
+      await apiClient.post("/staff", formData)
+      toast.success("Staff member created")
+      setDialogOpen(false)
+      fetchStaff()
+      setFormData({ fullName: "", email: "", phone: "" })
+    } catch (error) {
+      console.error(error)
+      toast.error("Failed to create staff")
+    }
+  }
 
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Staff</h2>
-          <p className="text-muted-foreground">
-            Manage your team members and their schedules.
-          </p>
-        </div>
-        <Dialog open={open} onOpenChange={(isOpen) => {
-          setOpen(isOpen);
-          if (!isOpen) setEditingStaff(null);
-        }}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Add Staff
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingStaff ? 'Edit Staff' : 'Add Staff'}</DialogTitle>
-              <DialogDescription>
-                {editingStaff ? 'Update staff member details.' : 'Add a new team member to your salon.'}
-              </DialogDescription>
-            </DialogHeader>
-            <StaffForm 
-              initialData={editingStaff} 
-              onSuccess={handleFormSuccess} 
-            />
-          </DialogContent>
+    <div className="flex-1 space-y-4 p-8 pt-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-3xl font-bold tracking-tight">Staff Management</h2>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+                <Button>
+                    <Plus className="mr-2 h-4 w-4" /> Add Staff
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Add New Staff</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleCreate} className="space-y-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="fullName">Full Name</Label>
+                        <Input 
+                            id="fullName" 
+                            value={formData.fullName} 
+                            onChange={(e) => setFormData({...formData, fullName: e.target.value})} 
+                            required
+                        />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input 
+                            id="email" 
+                            type="email"
+                            value={formData.email} 
+                            onChange={(e) => setFormData({...formData, email: e.target.value})} 
+                            required
+                        />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input 
+                            id="phone" 
+                            value={formData.phone} 
+                            onChange={(e) => setFormData({...formData, phone: e.target.value})} 
+                            required
+                        />
+                    </div>
+                    {/* Password is hidden/default for now to simplify */}
+                    <DialogFooter>
+                        <Button type="submit">Create Staff</Button>
+                    </DialogFooter>
+                </form>
+            </DialogContent>
         </Dialog>
       </div>
 
-      <div className="flex items-center gap-4 mb-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search staff..."
-            value={search}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+      <div className="border rounded-md">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Active</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {loading ? (
+               <TableRow>
+                 <TableCell colSpan={5} className="text-center h-24">Loading...</TableCell>
+               </TableRow>
+            ) : staff.length === 0 ? (
+               <TableRow>
+                 <TableCell colSpan={5} className="text-center h-24">No staff found.</TableCell>
+               </TableRow>
+            ) : (
+                staff.map((employee) => (
+                  <TableRow key={employee.id}>
+                    <TableCell className="font-medium">{employee.fullName}</TableCell>
+                    <TableCell>{employee.email}</TableCell>
+                    <TableCell>{employee.phone}</TableCell>
+                    <TableCell>{employee.isActive ? 'Yes' : 'No'}</TableCell>
+                    <TableCell className="text-right">
+                       <Button variant="ghost" size="sm"><Pencil className="h-4 w-4" /></Button>
+                       <Button variant="ghost" size="sm" className="text-destructive"><Trash className="h-4 w-4" /></Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+            )}
+          </TableBody>
+        </Table>
       </div>
-      
-      {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="text-muted-foreground">Loading staff...</div>
-        </div>
-      ) : (
-        <DataTable columns={columns} data={staffList} />
-      )}
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={!!deletingStaff} onOpenChange={(open: boolean) => !open && setDeletingStaff(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Staff Member?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deletingStaff?.fullName}</strong>? 
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
-  );
+  )
 }

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+
 import {
   LayoutDashboard,
   Calendar,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useSession, signOut } from 'next-auth/react';
+import { Logo } from "@/components/ui/logo";
 
 const routes = [
   {
@@ -64,20 +66,20 @@ export function Sidebar() {
   const { data: session } = useSession();
 
   return (
-    <div className="space-y-4 py-4 flex flex-col h-full bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-white border-r">
+    <div className="space-y-4 py-4 flex flex-col h-full bg-background border-r">
       <div className="px-3 py-2 flex-1">
         <Link href="/dashboard" className="flex items-center pl-3 mb-14">
-          <h1 className="text-2xl font-bold">SalonPro</h1>
+          <Logo className="h-8 w-auto text-primary" />
         </Link>
         <div className="space-y-1">
           {routes.map((route) => (
             <Link
               key={route.href}
               href={route.href}
-              className={cn(
-                'text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-primary hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition',
+                className={cn(
+                'text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-primary hover:bg-primary/10 rounded-lg transition',
                 pathname === route.href
-                  ? 'bg-black/10 dark:bg-white/10 text-primary'
+                  ? 'bg-primary/10 text-primary'
                   : 'text-muted-foreground',
               )}
             >

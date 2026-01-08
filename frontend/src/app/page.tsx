@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/marketplace/search-bar";
+import { Logo } from "@/components/ui/logo";
 import { CategoryCarousel } from "@/components/marketplace/category-carousel";
 import { RecommendedSection } from "@/components/marketplace/recommended-section";
 
@@ -10,20 +11,7 @@ export default function Home() {
       {/* Marketplace Header */}
       <header className="px-6 h-16 flex items-center justify-between border-b sticky top-0 bg-background/80 backdrop-blur z-50">
         <Link href="/" className="flex items-center gap-2">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 24" className="h-6 w-auto">
-            <title>BeautyBook</title>
-            <text 
-              x="0" 
-              y="18" 
-              fontFamily="system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" 
-              fontSize="20" 
-              fontWeight="600" 
-              fill="currentColor"
-              letterSpacing="-0.5"
-            >
-              BeautyBook
-            </text>
-          </svg>
+           <Logo className="h-6 w-auto text-primary" />
         </Link>
         <div className="flex items-center gap-4">
           <Link href="/login" className="hidden md:block text-sm font-semibold text-gray-700 hover:text-black">

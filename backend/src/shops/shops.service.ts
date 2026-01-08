@@ -111,4 +111,42 @@ export class ShopsService {
       staff,
     };
   }
+  async findOneById(id: string) {
+    // Reusing the same detailed fetch logic as findOnePublic but by ID
+    const shop = await this.shopRepository.findOne({ 
+        where: { id, isActive: true } 
+    });
+
+    if (!shop) {
+      throw new NotFoundException('Shop not found');
+    }
+
+    // Top Services
+    const services = await this.serviceRepository.find({
+        where: { shopId: shop.id, isActive: true },
+        relations: ['category'],
+        order: { category: { name: 'ASC' } }
+    });
+    
+    // Staff
+    const staff = await this.staffRepository.find({
+        where: { shopId: shop.id, isActive: true },
+        select: ['id', 'fullName', 'skills']
+    });
+
+    return {
+      shop,
+      services,
+      staff,
+    };
+  }
+
+  async update(id: string, attrs: Partial<Shop>) {
+    const shop = await this.shopRepository.findOneBy({ id });
+    if (!shop) {
+      throw new NotFoundException('Shop not found');
+    }
+    Object.assign(shop, attrs);
+    return this.shopRepository.save(shop);
+  }
 }
