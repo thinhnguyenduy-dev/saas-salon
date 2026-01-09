@@ -80,13 +80,22 @@ test.describe('Booking Flow (Integration)', () => {
     // 8. Booking Wizard - Step 4: Checkout
     await expect(page.getByText('Review and Confirm')).toBeVisible();
     
-    await page.getByPlaceholder(/Name/i).fill('Playwright Guest');
-    await page.getByPlaceholder(/Phone/i).fill('555-0199');
+    await page.getByPlaceholder('John Doe').fill('Playwright Guest');
+    await page.getByPlaceholder('+1 234 567 890').fill('555-0199');
     
     await page.getByRole('button', { name: /Confirm Booking/i }).click();
 
-    // 9. Verify Success
-    await expect(page.getByText(/Booking Confirmed/i)).toBeVisible({ timeout: 10000 });
+    // 9. Verify Payment Step Appears (New Flow)
+    // Instead of immediate success, we expect the Payment Form to load
+    await expect(page.getByText('Payment', { exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('Secure your booking')).toBeVisible();
     
+    // Check for Stripe Element presence (iframe)
+    // We can check the wrapper container
+    await expect(page.locator('#payment-element')).toBeVisible();
+
+    // NOTE: We cannot easily complete the payment in this test without handling Stripe iframe interactions 
+    // and using test cards which might be complex. 
+    // Verifying the Payment Form appears confirms the backend integration (client_secret flow) worked.
   });
 });

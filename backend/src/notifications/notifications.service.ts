@@ -74,4 +74,30 @@ export class NotificationsService {
     });
     this.logger.log(`Queued cancellation email for ${email}`);
   }
+
+  async sendBookingReminder(email: string, phone: string | null, bookingDetails: any) {
+    // 1. Send Email
+    if (email) {
+        await this.notificationsQueue.add('send-email', {
+            to: email,
+            subject: 'Appointment Reminder',
+            template: 'booking-reminder',
+            context: bookingDetails
+        });
+        this.logger.log(`Queued reminder email for ${email}`);
+    }
+
+    // 2. Send SMS
+    if (phone) {
+        await this.notificationsQueue.add('send-sms', {
+            to: phone,
+            message: `Reminder: Appointment at ${bookingDetails.shopName} tomorrow at ${bookingDetails.time}.`,
+        });
+        this.logger.log(`Queued reminder SMS for ${phone}`);
+    }
+  }
+
+  async sendSms(to: string, message: string) {
+      await this.notificationsQueue.add('send-sms', { to, message });
+  }
 }

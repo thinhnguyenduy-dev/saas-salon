@@ -11,6 +11,9 @@ import { UpdateBookingDto } from './dto/update-booking.dto';
 import { User, UserRole } from '../entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PaymentsService } from '../payments/payments.service';
+import { PaymentStatus } from '../entities/booking.entity';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 @Injectable()
 export class BookingsService {
@@ -21,6 +24,7 @@ export class BookingsService {
     @InjectRepository(Customer) private customerRepository: Repository<Customer>,
     private usersService: UsersService,
     private notificationsService: NotificationsService,
+    private paymentsService: PaymentsService,
   ) {}
 
   async createPublic(createDto: CreatePublicBookingDto) {
@@ -116,6 +120,28 @@ export class BookingsService {
     // Stray code removed
 
     return savedBooking;
+  }
+
+  async createPaymentIntent(bookingId: string) {
+      const booking = await this.bookingRepository.findOne({
+          where: { id: bookingId }, 
+          relations: ['services'] 
+      });
+      if (!booking) throw new NotFoundException('Booking not found');
+
+      if (booking.paymentStatus === PaymentStatus.PAID) {
+          throw new BadRequestException('Booking already paid');
+      }
+
+      // Calculate amount (using booking.totalPrice which is calculated on create/update)
+      const amount = Number(booking.totalPrice);
+      
+      return this.paymentsService.createBookingPaymentIntent(
+          booking.id,
+          amount,
+          booking.shopId,
+          booking.customerId
+      );
   }
 
   async create(createBookingDto: CreateBookingDto, user: User) {
@@ -386,4 +412,63 @@ export class BookingsService {
         throw new BadRequestException("Failed to fetch slots");
     }
 }
+
+  // Cron Job: Run every hour to check for upcoming bookings
+  @Cron(CronExpression.EVERY_HOUR)
+  async handleRemindersCron() {
+      // Find bookings in next 24 hours (+/- 1 hour slack)
+      // Implementation logic...
+      console.log("Running Reminder Cron...");
+      
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      tomorrow.setMinutes(0, 0, 0); // Start of that hour
+      
+      const tomorrowEnd = new Date(tomorrow);
+      tomorrowEnd.setHours(tomorrowEnd.getHours() + 1);
+
+      // Find bookings for tomorrow between X and X+1 hour
+      // actually, just find all bookings starting tomorrow within a window.
+      
+      const startWindow = new Date();
+      startWindow.setDate(startWindow.getDate() + 1);
+      startWindow.setHours(0,0,0,0);
+      
+      const endWindow = new Date(startWindow);
+      endWindow.setHours(23,59,59,999);
+      
+      // Realistically we want to remind exactly 24h before.
+      // Let's just find all bookings roughly 24h from now.
+      
+      const now = new Date();
+      const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const windowStart = new Date(twentyFourHoursFromNow.getTime() - 30 * 60 * 1000); // -30 mins
+      const windowEnd = new Date(twentyFourHoursFromNow.getTime() + 30 * 60 * 1000);   // +30 mins
+      
+      const bookings = await this.bookingRepository.find({
+          where: {
+              appointmentDate: Between(windowStart, windowEnd),
+              status: BookingStatus.CONFIRMED
+          },
+          relations: ['customer', 'shop']
+      });
+
+      console.log(`Found ${bookings.length} bookings for reminder.`);
+
+      for (const booking of bookings) {
+          if (booking.customer && (booking.customer.email || booking.customer.phone)) {
+              // Call the new method
+              // Call the new method
+              await this.notificationsService.sendBookingReminder(
+                  booking.customer.email,
+                  booking.customer.phone,
+                  {
+                      shopName: booking.shop?.name || 'Salon',
+                      time: booking.startTime,
+                      date: booking.appointmentDate
+                  }
+              );
+          }
+      }
+  }
 }

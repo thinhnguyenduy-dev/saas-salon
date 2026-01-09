@@ -23,6 +23,12 @@ export class BookingsController {
     return this.bookingsService.createPublic(createDto);
   }
 
+  @Public() // Or guarded? Let's make it public for now since guest bookings need it.
+  @Post(':id/pay') // Wait, :id param might conflict with 'public' or others if they were params. 'public' is literal, so ok.
+  async createPaymentIntent(@Param('id') id: string) {
+      return this.bookingsService.createPaymentIntent(id);
+  }
+
   @Public()
   @Get('slots')
   @ApiQuery({ name: 'date', required: true, type: String })

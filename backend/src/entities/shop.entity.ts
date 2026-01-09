@@ -57,6 +57,9 @@ export class Shop {
   @Column({ default: 'active' })
   subscriptionStatus: string;
 
+  @Column({ type: 'jsonb', default: [] })
+  library: string[];
+
   @Column({ default: true })
   isActive: boolean;
 

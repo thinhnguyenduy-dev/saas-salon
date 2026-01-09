@@ -61,25 +61,25 @@ export function StepCheckout({ shop }: StepCheckoutProps) {
          // 1. Create Booking
          const bookingRes = await apiClient.post('/bookings/public', payload);
          const booking = bookingRes.data;
+         console.log("Booking Response Data:", JSON.stringify(booking, null, 2));
 
-         // 2. Create Payment Intent
-         const paymentRes = await apiClient.post('/payments/create-intent', {
-            amount: total,
-            currency: 'usd',
-            metadata: { bookingId: booking.id, bookingCode: booking.bookingCode }
-         });
+         // 2. Create Payment Intent (Securely via Booking endpoint)
+         // bookingRes.data is { success: true, data: { id: ... } }
+         const bookingId = booking.data?.id || booking.id; 
+         const paymentRes = await apiClient.post(`/bookings/${bookingId}/pay`);
 
-         if (paymentRes.data?.client_secret) {
-             setClientSecret(paymentRes.data.client_secret);
+         if (paymentRes.data?.client_secret || paymentRes.data?.data?.client_secret) {
+             setClientSecret(paymentRes.data?.client_secret || paymentRes.data?.data?.client_secret);
              setPaymentMode(true);
          } else {
-             // Fallback if no payment needed or error (shouldn't happen directly)
+             // Fallback if no payment needed
              handleSuccess(); 
          }
 
     } catch (err: any) {
-        console.error(err);
-        const msg = err.response?.data?.message;
+        console.error("Booking Error:", err);
+        console.error("Error Response:", JSON.stringify(err.response?.data, null, 2));
+        const msg = err.response?.data?.message || err.response?.data?.error?.message;
         setError(Array.isArray(msg) ? msg.join(', ') : (msg || "Booking failed. Please try again."));
     } finally {
         setLoading(false);
